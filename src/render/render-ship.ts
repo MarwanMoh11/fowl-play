@@ -13,31 +13,51 @@ export const OD_GOLD = '#FFC93C';
 export const DRONE_FPS = 8;
 const TAU = Math.PI * 2;
 
-function drawOverdriveAura(ctx: CanvasRenderingContext2D, pos: Vec2, t: number, reduce: boolean): void {
+/** Colour steps of the aura glow. The magenta-to-gold blend is quantised so each step's gradient is built once. */
+const AURA_STEPS = 32;
+const auraGradients = new Map<number, CanvasGradient>();
+
+/** Radial glow centred on the origin (the caller translates to the ship), cached per colour step and reduce-flashes level. */
+function auraGradient(ctx: CanvasRenderingContext2D, step: number, amp: number): CanvasGradient {
+  const key = step * 2 + (amp < 1 ? 1 : 0);
+  let g = auraGradients.get(key);
+  if (!g) {
+    const color = mixColor(OD_MAGENTA, OD_GOLD, step / AURA_STEPS);
+    g = ctx.createRadialGradient(0, 0, 4, 0, 0, AURA_RADIUS);
+    g.addColorStop(0, rgba(color, 0.55 * amp));
+    g.addColorStop(0.6, rgba(color, 0.18 * amp));
+    g.addColorStop(1, rgba(color, 0));
+    auraGradients.set(key, g);
+  }
+  return g;
+}
+
+/** Glow (skipped on the low quality tier) and speed streaks. The streaks share one path and one stroke. */
+function drawOverdriveAura(ctx: CanvasRenderingContext2D, pos: Vec2, t: number, reduce: boolean, glow: boolean): void {
   const k = 0.5 + 0.5 * Math.sin(t * 5);
-  const color = mixColor(OD_MAGENTA, OD_GOLD, k);
+  const step = Math.round(k * AURA_STEPS);
+  const color = mixColor(OD_MAGENTA, OD_GOLD, step / AURA_STEPS);
   const amp = reduce ? 0.5 : 1;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  const g = ctx.createRadialGradient(pos.x, pos.y, 4, pos.x, pos.y, AURA_RADIUS);
-  g.addColorStop(0, rgba(color, 0.55 * amp));
-  g.addColorStop(0.6, rgba(color, 0.18 * amp));
-  g.addColorStop(1, rgba(color, 0));
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(pos.x, pos.y, AURA_RADIUS, 0, TAU);
-  ctx.fill();
+  ctx.translate(pos.x, pos.y);
+  if (glow) {
+    ctx.fillStyle = auraGradient(ctx, step, amp);
+    ctx.beginPath();
+    ctx.arc(0, 0, AURA_RADIUS, 0, TAU);
+    ctx.fill();
+  }
   // Speed streaks trailing down past the hull.
   ctx.lineWidth = 2;
   ctx.strokeStyle = rgba(color, 0.5 * amp);
+  ctx.beginPath();
   for (let i = 0; i < 5; i++) {
-    const x = pos.x + (i - 2) * 14;
-    const y0 = pos.y + 26 + ((t * 420 + i * 97) % 180);
-    ctx.beginPath();
+    const x = (i - 2) * 14;
+    const y0 = 26 + ((t * 420 + i * 97) % 180);
     ctx.moveTo(x, y0);
     ctx.lineTo(x, y0 + 26);
-    ctx.stroke();
   }
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -60,12 +80,12 @@ function drawDrones(ctx: CanvasRenderingContext2D, sprites: SpriteApi, state: Ga
   }
 }
 
-/** Ship hull (blinking while invulnerable), shield bubbles, overdrive aura and drones. */
-export function drawShipLayer(ctx: CanvasRenderingContext2D, sprites: SpriteApi, state: GameState, reduce: boolean): void {
+/** Ship hull (blinking while invulnerable), shield bubbles, overdrive aura and drones. glow = false drops the aura gradient. */
+export function drawShipLayer(ctx: CanvasRenderingContext2D, sprites: SpriteApi, state: GameState, reduce: boolean, glow = true): void {
   const pl = state.player;
   if (!pl.alive) return;
   const t = state.time;
-  if (pl.overdrive > 0) drawOverdriveAura(ctx, pl.pos, t, reduce);
+  if (pl.overdrive > 0) drawOverdriveAura(ctx, pl.pos, t, reduce, glow);
   drawDrones(ctx, sprites, state);
   const key = SHIP_SPRITE[pl.ship];
   const invuln = pl.invulnTimer > 0;

@@ -7,6 +7,23 @@ export function fontOf(size: number): string {
   return `bold ${size}px ${FONT_STACK}`;
 }
 
+/** Smallest effective text on a phone, in CSS px, and the largest enlargement that keeps the HUD layout intact. */
+export const LEGIBLE_MIN_CSS_PX = 11;
+export const LEGIBLE_MAX_BOOST = 1.8;
+let legibilityScale: number | null = null;
+
+/** Phone legibility: while set (the HUD does this for small screens), text is enlarged so its effective size is about LEGIBLE_MIN_CSS_PX. null = as designed. */
+export function setLegibilityScale(cssScale: number | null): void {
+  legibilityScale = cssScale;
+}
+
+/** The font size actually drawn for a designed size: unchanged on a large screen, enlarged (up to LEGIBLE_MAX_BOOST) on a small one. */
+export function legibleSize(size: number): number {
+  if (legibilityScale === null || legibilityScale <= 0) return size;
+  const boost = Math.min(LEGIBLE_MAX_BOOST, Math.max(1, LEGIBLE_MIN_CSS_PX / (size * legibilityScale)));
+  return size * boost;
+}
+
 export interface TextOpts {
   align?: CanvasTextAlign;
   baseline?: CanvasTextBaseline;
@@ -21,7 +38,7 @@ export interface TextOpts {
 export function drawText(
   ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, opts: TextOpts = {},
 ): void {
-  ctx.font = fontOf(size);
+  ctx.font = fontOf(legibleSize(size));
   ctx.textAlign = opts.align ?? 'left';
   ctx.textBaseline = opts.baseline ?? 'middle';
   const stroke = opts.stroke === undefined ? OUTLINE_COLOR : opts.stroke;

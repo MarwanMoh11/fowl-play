@@ -33,7 +33,8 @@ export interface Particle {
   text: string;
 }
 
-export interface ParticlePool { items: Particle[]; count: number; readonly capacity: number }
+/** `limit` <= capacity is the live budget the quality tier sets; alloc refuses new particles beyond it. */
+export interface ParticlePool { items: Particle[]; count: number; readonly capacity: number; limit: number }
 
 function blank(): Particle {
   return { kind: PK.spark, x: 0, y: 0, vx: 0, vy: 0, g: 0, life: 0, maxLife: 1, size: 1, size2: 1, rot: 0, vrot: 0, seed: 0, color: '#FFFFFF', text: '' };
@@ -42,7 +43,7 @@ function blank(): Particle {
 export function createPool(capacity: number = POOL_CAPACITY): ParticlePool {
   const items: Particle[] = new Array<Particle>(capacity);
   for (let i = 0; i < capacity; i++) items[i] = blank();
-  return { items, count: 0, capacity };
+  return { items, count: 0, capacity, limit: capacity };
 }
 
 // Local deterministic PRNG so effects are reproducible in tests (render never uses sim rng).
@@ -59,9 +60,9 @@ export function fxSeed(s: number): void {
 }
 const range = (a: number, b: number): number => a + (b - a) * fxRand();
 
-/** Claims a slot; returns null when the pool is full (new particles are dropped, never over capacity). */
+/** Claims a slot; returns null when the pool is full (new particles are dropped, never over the limit). */
 export function alloc(pool: ParticlePool, kind: ParticleKind, x: number, y: number, life: number, color: string): Particle | null {
-  if (pool.count >= pool.capacity) return null;
+  if (pool.count >= pool.limit) return null;
   const p = pool.items[pool.count++];
   p.kind = kind; p.x = x; p.y = y; p.vx = 0; p.vy = 0; p.g = 0;
   p.life = life; p.maxLife = life; p.size = 1; p.size2 = 1; p.rot = 0; p.vrot = 0;
@@ -220,6 +221,7 @@ export function drawParticles(ctx: CanvasRenderingContext2D, pool: ParticlePool,
   const items = pool.items;
   let fill = '';
   let stroke = '';
+  let font = '';
   for (let i = 0; i < pool.count; i++) {
     const p = items[i];
     const isGround = p.kind === PK.splat;
@@ -327,7 +329,8 @@ export function drawParticles(ctx: CanvasRenderingContext2D, pool: ParticlePool,
       }
       case PK.text: {
         setAlpha(ctx, t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4);
-        ctx.font = `bold ${POPUP.fontSize * p.size}px ${FONT_FAMILY}`;
+        const f = `bold ${POPUP.fontSize * p.size}px ${FONT_FAMILY}`;
+        if (f !== font) { ctx.font = f; font = f; }
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.lineJoin = 'round';

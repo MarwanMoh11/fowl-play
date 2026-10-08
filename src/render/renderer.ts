@@ -12,6 +12,7 @@ import { drawParticles } from './particles';
 import { drawAttract } from './render-attract';
 import { drawEnemyLayer, drawPickupLayer, drawProjectileLayer } from './render-entities';
 import { drawShipLayer } from './render-ship';
+import { bindQuality, COARSE_START_TIER, createQuality, isCoarsePointer } from './quality';
 
 export * from './render-maps';
 export { ATTRACT_CHICKENS } from './render-attract';
@@ -41,6 +42,8 @@ export function createWorldRenderer(ctx: CanvasRenderingContext2D, sprites: Spri
   const background = createBackground();
   const ambient: Ambient = createAmbient();
   const splash: Splash = createSplash();
+  const quality = createQuality(isCoarsePointer() ? COARSE_START_TIER : 'high');
+  bindQuality(ctx, quality);
   const shakeOffset = { x: 0, y: 0 };
   let lastState: GameState | null = null;
   let lastSimTime = -1;
@@ -81,6 +84,9 @@ export function createWorldRenderer(ctx: CanvasRenderingContext2D, sprites: Spri
     render(state: GameState | null, view: View, settings: Settings, frameDt: number): void {
       const s = view.scale;
       const reduce = settings.reduceFlashes;
+      quality.observe(frameDt);
+      const tier = quality.settings;
+      effects.pool.limit = tier.particleLimit;
       ctx.imageSmoothingEnabled = true;
       ctx.setTransform(s, 0, 0, s, 0, 0);
       clock += frameDt;
@@ -89,7 +95,7 @@ export function createWorldRenderer(ctx: CanvasRenderingContext2D, sprites: Spri
       background.update(frameDt, warp);
       effects.update(frameDt, state && state.player.alive ? state.player.pos : null);
       updateSplash(splash, frameDt);
-      background.draw(ctx, warp, reduce);
+      background.draw(ctx, warp, reduce, tier.decor);
       effects.shake.sample(clock, settings.screenShake, shakeOffset);
       ctx.setTransform(s, 0, 0, s, shakeOffset.x * s, shakeOffset.y * s);
       drawParticles(ctx, effects.pool, sprites, true);
@@ -101,8 +107,9 @@ export function createWorldRenderer(ctx: CanvasRenderingContext2D, sprites: Spri
       } else {
         drawAttract(ctx, sprites, clock);
       }
-      drawArcs(ctx, effects.arcs);
-      if (state) drawShipLayer(ctx, sprites, state, reduce);
+      // Bolts re-jitter on every draw, so a paused frame (dt 0) would show them flickering; they skip that frame.
+      if (frameDt > 0) drawArcs(ctx, effects.arcs);
+      if (state) drawShipLayer(ctx, sprites, state, reduce, tier.glow);
       drawParticles(ctx, effects.pool, sprites, false);
       ctx.setTransform(s, 0, 0, s, 0, 0);
       if (state) drawSplash(ctx, sprites, splash);

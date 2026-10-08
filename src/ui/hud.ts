@@ -7,7 +7,7 @@ import { drawBottomBar } from './hud-bar';
 import { drawComboMeter } from './hud-meters';
 import { drawPowerups } from './hud-powerups';
 import { drawTally } from './tally';
-import { clamp01, drawText } from './text';
+import { clamp01, drawText, setLegibilityScale } from './text';
 
 const SCORE_X = 20;
 const SCORE_Y = 36;
@@ -73,21 +73,46 @@ function drawBossBar(ctx: CanvasRenderingContext2D, state: GameState): void {
   ctx.strokeRect(x, y, w, h);
 }
 
+/** Below this CSS scale (a phone in landscape is about 0.45 to 0.6) HUD text is enlarged for legibility. */
+export const HUD_SMALL_SCALE = 0.75;
+/** Touch devices: the top-right corner holds the pause button, so the chapter and FPS labels end here. */
+const RIGHT_X_COARSE = 1150;
+
+export interface HudOptions {
+  /** CSS px per logical px. Below HUD_SMALL_SCALE the HUD text is enlarged; omitted = as designed. */
+  cssScale?: number;
+  /** Touch-first device: keeps the top-right labels clear of the corner pause button. */
+  coarse?: boolean;
+  /** Quality tier of the renderer, shown under the FPS counter when showFps is on. */
+  tier?: string | null;
+}
+
 export function drawHud(
   ctx: CanvasRenderingContext2D, state: GameState, sprites: SpriteApi, settings: Settings, fps: number,
+  opts: HudOptions = {},
 ): void {
+  const small = opts.cssScale !== undefined && opts.cssScale < HUD_SMALL_SCALE;
+  const rightX = opts.coarse ? RIGHT_X_COARSE : RIGHT_X;
   ctx.save();
-  ctx.globalAlpha = 1;
-  drawBottomBar(ctx, state, sprites, settings);
-  drawText(ctx, formatScore(state.score), SCORE_X, SCORE_Y, 28);
-  sprites.draw(ctx, 'icon_corn', SCORE_X + 10, CORN_Y);
-  drawText(ctx, formatScore(state.corn), SCORE_X + 26, CORN_Y, 18);
-  drawText(ctx, modeLabel(state), RIGHT_X, CHAPTER_Y, 18, { align: 'right' });
-  if (settings.showFps) drawText(ctx, `${Math.round(fps)} FPS`, RIGHT_X, FPS_Y, 14, { align: 'right' });
-  drawBossBar(ctx, state);
-  drawComboMeter(ctx, state);
-  drawPowerups(ctx, state, sprites);
-  drawTally(ctx, state, settings);
-  drawBanner(ctx, state, settings);
-  ctx.restore();
+  setLegibilityScale(small ? opts.cssScale ?? null : null);
+  try {
+    ctx.globalAlpha = 1;
+    drawBottomBar(ctx, state, sprites, settings);
+    drawText(ctx, formatScore(state.score), SCORE_X, SCORE_Y, 28);
+    sprites.draw(ctx, 'icon_corn', SCORE_X + 10, CORN_Y);
+    drawText(ctx, formatScore(state.corn), SCORE_X + 26, CORN_Y, 18);
+    drawText(ctx, modeLabel(state), rightX, CHAPTER_Y, 18, { align: 'right' });
+    if (settings.showFps) {
+      drawText(ctx, `${Math.round(fps)} FPS`, rightX, FPS_Y, 14, { align: 'right' });
+      if (opts.tier) drawText(ctx, `QUALITY ${opts.tier.toUpperCase()}`, rightX, FPS_Y + 18, 12, { align: 'right' });
+    }
+    drawBossBar(ctx, state);
+    drawComboMeter(ctx, state);
+    drawPowerups(ctx, state, sprites);
+    drawTally(ctx, state, settings);
+    drawBanner(ctx, state, settings);
+  } finally {
+    setLegibilityScale(null);
+    ctx.restore();
+  }
 }
