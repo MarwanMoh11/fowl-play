@@ -1,6 +1,6 @@
-# Fowl Play
+# Fowl Play: HENPOCALYPSE
 
-An original arcade shoot-'em-up: one starfighter against an armada of space chickens. TypeScript + Canvas 2D + Web Audio, no runtime dependencies, all art and audio generated in code.
+An original arcade shoot-'em-up: one starfighter against the Cluckhive Empire's armada of space chickens. v2.0 adds 12 chapters (120 waves), 12 bosses + 7 mini-bosses, 24 enemy types, 10 weapons, 4 ships, power-ups, combo chains, fury/overdrive, a 30-perk draft after every boss, four modes (Campaign, Onslaught, Boss Rush, Daily Clutch), 8 mutators, and meta progression (Golden Corn, Hangar, 42 achievements, Codex). Plan and spec: `docs/HENPOCALYPSE.md`. TypeScript + Canvas 2D + Web Audio, no runtime dependencies, all art and audio generated in code.
 
 ## Run
 
@@ -18,14 +18,15 @@ npm run build    # static build in dist/
 | Move | ship follows pointer | Arrows / WASD |
 | Fire (hold) | left button | Space / Z / J |
 | Missile | right button | X / K |
+| Overdrive (fury full) | middle button | C / L / Shift |
 | Pause | — | Esc / P |
 | Confirm / skip tally | left click | Enter / Space |
 
 ## Debug
 
-URL parameters: `?debug=1&seed=42&difficulty=hard&chapter=3&wave=10&god=1&gallery=1`.
+URL parameters: `?debug=1&seed=42&difficulty=hard&chapter=3&wave=10&god=1&gallery=1`, plus `mode=campaign|onslaught|boss_rush|daily`, `ship=falcon|bantam|bulwark|phoenix`, `mutators=turbo,feast,…`.
 
-Debug keys (with `debug=1`): `1` hitboxes · `2` god mode · `3` kill all · `4` power +1 · `5` cycle weapon · `6` +5 missiles · `7` jump to boss.
+Debug keys (with `debug=1`): `1` hitboxes · `2` god mode · `3` kill all · `4` power +1 · `5` cycle weapon · `6` +5 missiles · `7` jump to boss · `8` drop a power-up · `9` fill fury · `0` kill everything.
 
 ## Architecture
 
