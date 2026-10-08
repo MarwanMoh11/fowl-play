@@ -168,9 +168,14 @@ export function buyUpgrade(p: Profile, id: UpgradeId): boolean {
   return true;
 }
 
+/** Whole 20 000-point blocks in a score: the score part of Golden Corn. */
+export function scoreBlocks(score: number): number {
+  return Math.floor(Math.max(0, score) / CORN_PER_SCORE);
+}
+
 /** Golden Corn for one run segment: pickups + 1 per 20 000 points + 15 per boss. */
 export function cornForRun(run: { corn: number; score: number; bossesKilled: number }): number {
-  return Math.max(0, run.corn) + Math.floor(Math.max(0, run.score) / CORN_PER_SCORE) + CORN_PER_BOSS * Math.max(0, run.bossesKilled);
+  return Math.max(0, run.corn) + scoreBlocks(run.score) + CORN_PER_BOSS * Math.max(0, run.bossesKilled);
 }
 
 /** Local calendar date as YYYYMMDD (daily runs). */

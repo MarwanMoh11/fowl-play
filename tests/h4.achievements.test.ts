@@ -103,16 +103,18 @@ describe('live stats and banking', () => {
   it('bankRun pays corn for the new part of a run only and counts each run once', () => {
     const p = createProfile();
     const first = makeSummary({ score: 45_000, corn: 12, bossesKilled: 2, mode: 'campaign' });
-    const r1 = bankRun(p, first, { corn: 12, score: 45_000, bosses: 2 }, NO_RUN, [], '2026-10-08T00:00:00.000Z');
+    const r1 = bankRun(p, first, { corn: 12, scoreBlocks: 2, bosses: 2 }, NO_RUN, [], '2026-10-08T00:00:00.000Z');
     expect(r1.cornEarned).toBe(12 + 2 + 30);
     expect(p.corn).toBe(44);
     expect(p.stats.runs).toBe(1);
     expect(p.best.campaign).toBe(45_000);
+    // Same run continued after victory: the segment is 45 000 -> 60 000, i.e. blocks 2 -> 3, and it is not a new run.
+    // (Was: score delta 15 000 floored to 0 blocks and runs counted twice.)
     const later = makeSummary({ score: 60_000, corn: 15, bossesKilled: 3, mode: 'campaign' });
-    const r2 = bankRun(p, later, { corn: 3, score: 15_000, bosses: 1 }, NO_RUN, [], '2026-10-08T00:00:00.000Z');
-    expect(r2.cornEarned).toBe(3 + 0 + 15);
-    expect(p.corn).toBe(44 + 18);
-    expect(p.stats.runs).toBe(2);
+    const r2 = bankRun(p, later, { corn: 3, scoreBlocks: 1, bosses: 1, first: false }, NO_RUN, [], '2026-10-08T00:00:00.000Z');
+    expect(r2.cornEarned).toBe(3 + 1 + 15);
+    expect(p.corn).toBe(44 + 19);
+    expect(p.stats.runs).toBe(1);
     expect(p.best.campaign).toBe(60_000);
   });
 
@@ -120,7 +122,7 @@ describe('live stats and banking', () => {
     const p = createProfile();
     p.achievements.first_blood = '2026-10-01T00:00:00.000Z';
     const summary = makeSummary({ score: 0, corn: 0, maxCombo: 25, mode: 'campaign' });
-    const r = bankRun(p, summary, { corn: 0, score: 0, bosses: 0 }, run({ maxCombo: 25 }), ['first_blood'], '2026-10-08T00:00:00.000Z');
+    const r = bankRun(p, summary, { corn: 0, scoreBlocks: 0, bosses: 0 }, run({ maxCombo: 25 }), ['first_blood'], '2026-10-08T00:00:00.000Z');
     expect(r.unlocked).toEqual(['first_blood', 'combo_25']);
     expect(r.achievementCorn).toBe(25 + 25);
     expect(p.corn).toBe(25);
@@ -129,7 +131,7 @@ describe('live stats and banking', () => {
 
   it('recordRun saves the banked run to storage', () => {
     const kv = memoryKV();
-    recordRun(makeSummary({ score: 20_000, corn: 4, mode: 'onslaught' }), kv, { corn: 4, score: 20_000, bosses: 0 }, NO_RUN);
+    recordRun(makeSummary({ score: 20_000, corn: 4, mode: 'onslaught' }), kv, { corn: 4, scoreBlocks: 1, bosses: 0 }, NO_RUN);
     const back = loadProfile(kv);
     expect(back.corn).toBe(5);
     expect(back.best.onslaught).toBe(20_000);

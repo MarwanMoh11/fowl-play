@@ -3,7 +3,7 @@ import { BOSS_INFO, type RunSummary } from '../shared/contracts';
 import type { GameEvent } from '../sim/events';
 import type { GameState } from '../sim/types';
 import { achievementById, evaluateAchievements, unlockAchievement, type RunFacts } from './achievements';
-import { loadProfile, saveProfile } from './profile';
+import { loadProfile, saveProfile, scoreBlocks } from './profile';
 import { applyLive, bankRun, ZERO_BASE, type BankDelta, type RunReward, type StatBase } from './profile-record';
 import { playEffect } from '../audio';
 import type { KV } from './storage';
@@ -33,7 +33,10 @@ function freshFlags(): Flags {
   return { victory: false, flawless: false, cool: false, revived: false, overheated: false, maxPower: 0, cleared: [] };
 }
 
-function zeroBank(): BankDelta {
+/** Totals already banked for the current run (a victory run banks once at victory and again at its end). */
+interface Banked { corn: number; score: number; bosses: number }
+
+function zeroBank(): Banked {
   return { corn: 0, score: 0, bosses: 0 };
 }
 
@@ -43,6 +46,7 @@ export function createRunTracker(kv: KV | null, notify: (text: string) => void):
   const base: StatBase = { ...ZERO_BASE };
   let pending: string[] = [];
   let banked = zeroBank();
+  let banks = 0;
 
   function factsOf(s: GameState): RunFacts {
     return {
@@ -65,7 +69,8 @@ export function createRunTracker(kv: KV | null, notify: (text: string) => void):
   }
 
   function unlockLive(p: ReturnType<typeof loadProfile>, facts: RunFacts): boolean {
-    const fresh = evaluateAchievements(facts, p);
+    // Without storage the profile never remembers an unlock, so a condition that stays true must not re-unlock each batch.
+    const fresh = evaluateAchievements(facts, p).filter((id) => !pending.includes(id));
     const date = new Date().toISOString();
     for (const id of fresh) {
       const reward = unlockAchievement(p, id, date);
@@ -84,6 +89,7 @@ export function createRunTracker(kv: KV | null, notify: (text: string) => void):
       Object.assign(base, ZERO_BASE);
       pending = [];
       banked = zeroBank();
+      banks = 0;
     }
     for (const e of events) noteEvent(e, s);
     flags.maxPower = Math.max(flags.maxPower, s.player.power);
@@ -97,8 +103,9 @@ export function createRunTracker(kv: KV | null, notify: (text: string) => void):
     const p = loadProfile(kv);
     const delta: BankDelta = {
       corn: summary.corn - banked.corn,
-      score: summary.score - banked.score,
+      scoreBlocks: scoreBlocks(summary.score) - scoreBlocks(banked.score),
       bosses: summary.bossesKilled - banked.bosses,
+      first: banks === 0,
     };
     const facts: RunFacts = st ? { ...factsOf(st), victory: flags.victory || summary.victory } : {
       mode: summary.mode, difficulty: summary.difficulty, chapter: summary.chapter, mutators: summary.mutators,
@@ -109,6 +116,7 @@ export function createRunTracker(kv: KV | null, notify: (text: string) => void):
     saveProfile(p, kv);
     pending = [];
     banked = { corn: summary.corn, score: summary.score, bosses: summary.bossesKilled };
+    banks += 1;
     return reward;
   }
 
@@ -122,6 +130,7 @@ export function createRunTracker(kv: KV | null, notify: (text: string) => void):
       Object.assign(base, ZERO_BASE);
       pending = [];
       banked = zeroBank();
+      banks = 0;
     },
   };
 }

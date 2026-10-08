@@ -11,6 +11,8 @@ import type { Host, Screen } from './host';
 export const EMPTY_TABLE_TEXT = 'No scores yet. Go fly!';
 const CONFIRM_TEXT = 'SURE? PRESS AGAIN';
 const CONFIRM_TIMEOUT_MS = 3000;
+/** The confirming press must come this long after arming, so a double click cannot clear the table. */
+const CONFIRM_MIN_MS = 500;
 const HEADERS = ['#', 'NAME', 'SCORE', 'CH', 'DIFFICULTY', 'DATE'];
 
 export function formatDate(iso: string): string {
@@ -53,10 +55,12 @@ export function buildScores(host: Host, back: () => void, tab = 0): Screen {
   tabRow.append(...tabItems.map((t) => t.el));
   panel.append(h('h2', 'fp-heading', 'HIGH SCORES'), tabRow, buildScoreTable(list));
   let armed = false;
+  let armedAt = Number.NEGATIVE_INFINITY;
   let timer: ReturnType<typeof setTimeout> | null = null;
   const clear = buttonItem('CLEAR SCORES', () => {
     if (!armed) {
       armed = true;
+      armedAt = performance.now();
       clear.el.textContent = CONFIRM_TEXT;
       timer = setTimeout(() => {
         armed = false;
@@ -64,6 +68,7 @@ export function buildScores(host: Host, back: () => void, tab = 0): Screen {
       }, CONFIRM_TIMEOUT_MS);
       return;
     }
+    if (performance.now() - armedAt < CONFIRM_MIN_MS) return;
     if (timer !== null) clearTimeout(timer);
     clearTable(host.kv, current.key);
     host.show(buildScores(host, back, tabs.indexOf(current)));

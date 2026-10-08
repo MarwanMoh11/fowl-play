@@ -10,8 +10,10 @@ import { buildTitle } from './screens/title';
 import { createRunTracker } from './run-tracker';
 import { createToaster } from './toast';
 import { parseSettings, safeStorage, saveSettings } from './storage';
+import { attachCompact } from './compact';
 
 export function createUI(root: HTMLElement, rawCb: UICallbacks, deps: UIDeps): UI {
+  attachCompact(root);
   const kv = safeStorage();
   const toaster = createToaster(document, root);
   const tracker = createRunTracker(kv, (text) => toaster.push(text));

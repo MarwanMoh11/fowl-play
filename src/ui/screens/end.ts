@@ -1,6 +1,7 @@
 // src/ui/screens/end.ts — OWNER: H4 (from A4). Game Over and Victory: corn, unlocked achievements, name entry per mode (§8.7).
 import { MODE_INFO, type RunSummary } from '../../shared/contracts';
 import { achievementById, TIER_LABEL } from '../achievements';
+import { isCompactUi, isTouchUi } from '../compact';
 import { formatScore } from '../hud';
 import { addToTable, loadTable, qualifiesFor, tableKeyFor, type HighScore } from '../highscores';
 import { createMenu } from '../menu';
@@ -14,6 +15,8 @@ import { buildScoreTable } from './scores';
 export const ACTIVATE_GUARD_MS = 350;
 /** The name field ignores typing this long, for the same reason. */
 export const INPUT_LOCK_MS = 600;
+/** Wait for the on-screen keyboard to open before scrolling the name field into view. */
+export const KEYBOARD_SCROLL_MS = 300;
 export const MAX_SHOWN_ACHIEVEMENTS = 6;
 
 export function endTitle(summary: RunSummary): string {
@@ -62,6 +65,10 @@ function nameEntry(
   input.readOnly = true;
   setTimeout(() => { input.readOnly = false; }, INPUT_LOCK_MS);
   input.addEventListener('input', () => { input.value = sanitizeName(input.value); });
+  // On a phone the on-screen keyboard covers the lower half of the landscape screen: bring the field to the top of the scroll area.
+  input.addEventListener('focus', () => {
+    if (isCompactUi()) setTimeout(() => input.scrollIntoView({ block: 'start' }), KEYBOARD_SCROLL_MS);
+  });
   const save = (): void => {
     const name = sanitizeName(input.value).trim() || DEFAULT_PILOT_NAME;
     saveLastName(name, host.kv);
@@ -73,7 +80,8 @@ function nameEntry(
   };
   const saveItem = buttonItem('SAVE', save, 'fp-save');
   const row = h('div', 'fp-name-row');
-  row.append(h('label', 'fp-name-label', 'NEW HIGH SCORE! ENTER YOUR NAME'), input, saveItem.el);
+  const label = isTouchUi() ? 'NEW HIGH SCORE! TYPE YOUR NAME, THEN TAP SAVE' : 'NEW HIGH SCORE! ENTER YOUR NAME';
+  row.append(h('label', 'fp-name-label', label), input, saveItem.el);
   return { row, items: [textItem(input, save), saveItem] };
 }
 
