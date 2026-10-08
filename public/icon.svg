@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- OWNER: D. Same geometry as scripts/make-icons.mjs (keep both in step). -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d2a5c"/>
+      <stop offset="1" stop-color="#060814"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g fill="#ffffff">
+    <circle cx="71.7" cy="92.2" r="6.1"/>
+    <circle cx="440.3" cy="61.4" r="6.1"/>
+    <circle cx="460.8" cy="286.7" r="6.1"/>
+    <circle cx="51.2" cy="317.4" r="6.1"/>
+    <circle cx="358.4" cy="460.8" r="6.1"/>
+    <circle cx="122.9" cy="460.8" r="6.1"/>
+  </g>
+  <polygon points="215.04,378.88 296.96,378.88 256,476.16" fill="#ff9d2e"/>
+  <polygon points="256,82 399.36,378.88 256,307.2 112.64,378.88" fill="#ffd23f"/>
+  <circle cx="256" cy="215.04" r="35.84" fill="#bfefff"/>
+</svg>
