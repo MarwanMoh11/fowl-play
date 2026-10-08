@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { createMusicEngine, buildStepIndex, stepSeconds, LOOKAHEAD_S, CROSSFADE_S } from '../src/audio/music';
 import { melody, drumPattern, noteToMidi, STEPS_PER_BAR } from '../src/audio/music-dsl';
-import { TRACKS, TRACK_NAMES, TRACK_TAILS, trackSteps } from '../src/audio/music-data';
+import { TRACKS, TRACK_NAMES, TRACK_TAILS, trackSteps, type TrackName } from '../src/audio/music-data';
 import { chooseTrack, duckLevel, PAUSE_DUCK } from '../src/audio/music-select';
 import type { GameState } from '../src/sim/types';
 import { fakeAudioContext } from './a4.helpers';
@@ -10,17 +10,25 @@ import { fakeAudioContext } from './a4.helpers';
 const MIDI_MIN = 24;
 const MIDI_MAX = 108;
 const DRUM_KINDS = ['kick', 'snare', 'hat'];
-const EXPECTED = {
+const EXPECTED: Record<TrackName, { bpm: number; bars: number; loop: boolean }> = {
   title: { bpm: 100, bars: 8, loop: true },
   game: { bpm: 132, bars: 8, loop: true },
   boss: { bpm: 150, bars: 8, loop: true },
   victory: { bpm: 120, bars: 4, loop: false },
   gameover: { bpm: 80, bars: 2, loop: false },
-} as const;
+  nebula: { bpm: 132, bars: 8, loop: true },
+  abyss: { bpm: 120, bars: 8, loop: true },
+  throne: { bpm: 140, bars: 8, loop: true },
+  boss2: { bpm: 150, bars: 8, loop: true },
+  empress: { bpm: 156, bars: 16, loop: true },
+  draft: { bpm: 90, bars: 8, loop: true },
+};
 
 describe('music data', () => {
-  it('has the five tracks from the spec', () => {
-    expect([...TRACK_NAMES].sort()).toEqual(['boss', 'game', 'gameover', 'title', 'victory']);
+  it('has the five classic tracks and the six HENPOCALYPSE tracks from the spec', () => {
+    expect([...TRACK_NAMES].sort()).toEqual(
+      ['abyss', 'boss', 'boss2', 'draft', 'empress', 'game', 'gameover', 'nebula', 'throne', 'title', 'victory'],
+    );
     for (const name of TRACK_NAMES) {
       const t = TRACKS[name];
       expect(t.name).toBe(name);

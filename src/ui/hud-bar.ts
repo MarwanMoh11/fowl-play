@@ -2,6 +2,7 @@
 import { WEAPON_INFO, type Settings, type SpriteApi } from '../shared/contracts';
 import type { GameState } from '../sim/types';
 import { HUD_BAR_Y, MAX_POWER, WORLD_W } from '../sim/tuning/core';
+import { drawFuryBar } from './hud-meters';
 import { clamp01, drawText, lerpColor } from './text';
 
 export const BAR_HEIGHT = 44;
@@ -37,7 +38,7 @@ const HEAT_BACK = '#2A2340';
 const HEAT_MID_AT = 60;
 export const HEAT_COLORS = { cool: '#39FF88', warm: '#FFD60A', hot: '#FF3B3B' } as const;
 export const OVERHEAT_FLASH_HZ = 6;
-const WEAPON_X = 980;
+const WEAPON_X = 1070;
 
 /** Heat bar colour: green at 0, yellow at 60, red at 100. */
 export function heatColor(heat: number): string {
@@ -119,4 +120,5 @@ export function drawBottomBar(
   drawPower(ctx, state);
   drawHeat(ctx, state, settings);
   drawWeapon(ctx, sprites, state);
+  drawFuryBar(ctx, state, settings.reduceFlashes);
 }

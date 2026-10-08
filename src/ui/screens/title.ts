@@ -1,24 +1,22 @@
-// src/ui/screens/title.ts — OWNER: A4. Title screen (§8.7).
-import type { Difficulty } from '../../sim/types';
-import { DEFAULT_LOADOUT } from '../../sim/mods';
+// src/ui/screens/title.ts — OWNER: H4 (from A4). Title screen: PLAY, meta screens, settings and help (§8.7, HENPOCALYPSE §H4 P0-2).
+import { setMenuTrack } from '../../audio/music-select';
 import { createMenu } from '../menu';
-import { buttonItem, h, selectorItem } from '../widgets';
+import { buttonItem, h } from '../widgets';
+import { buildAchievements } from './achievements-screen';
+import { buildCodex } from './codex';
 import { buildCredits } from './credits';
+import { buildHangar } from './hangar';
 import type { Host, Screen } from './host';
 import { buildHowToPlay } from './howto';
+import { buildModeSelect } from './mode-select';
 import { buildScores } from './scores';
 import { buildSettings } from './settings';
 
-export const GAME_VERSION = 'v1.0';
+export const GAME_VERSION = 'v2.0';
+export const SUBTITLE = 'HENPOCALYPSE';
 export const TAGLINE = 'Defend the galaxy from the poultry armada';
 export const CONTROLS_SUMMARY =
   'Move: mouse / arrows / WASD  ·  Fire: click / Space / Z  ·  Missile: right-click / X  ·  Pause: Esc / P';
-
-const DIFFICULTY_OPTIONS: { value: Difficulty; text: string }[] = [
-  { value: 'easy', text: 'EASY' },
-  { value: 'normal', text: 'NORMAL' },
-  { value: 'hard', text: 'HARD' },
-];
 
 /** Logo with an outline layer under a gradient-filled text layer (text-shadow would show through clipped text). */
 export function buildLogo(): HTMLElement {
@@ -29,20 +27,23 @@ export function buildLogo(): HTMLElement {
 }
 
 export function buildTitle(host: Host): Screen {
+  setMenuTrack(null);
   const el = h('div', 'fp-screen fp-title');
   const toTitle = (): void => host.show(buildTitle(host));
   const items = [
-    buttonItem('PLAY', () => host.cb.onStart({ difficulty: host.settings().difficulty, mode: 'campaign', loadout: DEFAULT_LOADOUT })),
-    selectorItem('DIFFICULTY', DIFFICULTY_OPTIONS, host.settings().difficulty, (difficulty) => host.update({ difficulty })),
-    buttonItem('HIGH SCORES', () => host.show(buildScores(host, toTitle))),
+    buttonItem('PLAY', () => host.show(buildModeSelect(host, toTitle))),
+    buttonItem('HANGAR', () => host.show(buildHangar(host, toTitle))),
+    buttonItem('ACHIEVEMENTS', () => host.show(buildAchievements(host, toTitle))),
+    buttonItem('CODEX', () => host.show(buildCodex(host, toTitle, 0))),
+    buttonItem('HIGH SCORES', () => host.show(buildScores(host, toTitle, 0))),
     buttonItem('SETTINGS', () => host.show(buildSettings(host, toTitle))),
-    buttonItem('HOW TO PLAY', () => host.show(buildHowToPlay(host, toTitle))),
+    buttonItem('HOW TO PLAY', () => host.show(buildHowToPlay(host, toTitle, 0))),
     buttonItem('CREDITS', () => host.show(buildCredits(host, toTitle))),
   ];
-  const list = h('div', 'fp-menu');
+  const list = h('div', 'fp-menu fp-title-menu');
   list.append(...items.map((i) => i.el));
   const footer = h('div', 'fp-footer');
   footer.append(h('span', '', CONTROLS_SUMMARY), h('span', 'fp-version', GAME_VERSION));
-  el.append(buildLogo(), h('p', 'fp-tagline', TAGLINE), list, footer);
+  el.append(buildLogo(), h('p', 'fp-subtitle', SUBTITLE), h('p', 'fp-tagline', TAGLINE), list, footer);
   return { el, menu: createMenu(items, { audio: host.audio }) };
 }

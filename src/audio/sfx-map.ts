@@ -1,7 +1,7 @@
-// src/audio/sfx-map.ts — OWNER: A4. Maps simulation events to sound ids (§8.8). Pure.
+// src/audio/sfx-map.ts — OWNER: H4. Maps simulation events to sound ids (§8.8, HENPOCALYPSE §4.2). Pure.
 import type { UiSound } from '../shared/contracts';
 import type { GameEvent } from '../sim/events';
-import type { EnemyKind, WeaponId } from '../sim/types';
+import type { EnemyKind, PickupKind, WeaponId } from '../sim/types';
 import type { SoundId } from './sfx';
 
 const UI_SOUNDS: Record<UiSound, SoundId> = {
@@ -19,21 +19,54 @@ function killSound(kind: EnemyKind): SoundId | null {
   return null; // bosses are covered by boss_killed
 }
 
-function pickupSound(kind: string, hasWeaponChange: boolean): SoundId | null {
+function pickupSound(kind: PickupKind, hasWeaponChange: boolean): SoundId | null {
   if (kind === 'drumstick') return 'food';
   if (kind === 'roast') return 'roast';
   if (kind === 'power_core') return 'power';
+  if (kind === 'life_up') return 'one_up';
+  if (kind === 'golden_egg') return 'golden';
+  if (kind === 'corn') return null; // corn_collected plays the coin
+  if (kind.startsWith('pu_')) return 'power';
   // A gift of the weapon you already hold raises firepower instead of switching weapons.
   return hasWeaponChange ? null : 'power';
 }
 
-/** Phase 0: the six new weapons borrow v1 sounds until H4 adds their own recipes. */
 const FIRE_SOUND: Record<WeaponId, SoundId> = {
   pulse: 'fire_pulse', neutron: 'fire_neutron', laser: 'fire_laser', arc: 'fire_arc',
-  flak: 'fire_pulse', flame: 'fire_laser', sickle: 'fire_neutron', homing: 'fire_pulse', rail: 'fire_neutron', prism: 'fire_laser',
+  flak: 'fire_flak', flame: 'fire_flame', sickle: 'fire_sickle', homing: 'fire_homing', rail: 'fire_rail', prism: 'fire_prism',
+};
+
+/** Simulation events that map one-to-one onto a sound (HENPOCALYPSE §4.2). */
+const EVENT_SOUND: Partial<Record<GameEvent['type'], SoundId>> = {
+  combo: 'combo_up',
+  combo_break: 'combo_break',
+  fury_full: 'fury_ready',
+  overdrive_start: 'overdrive_on',
+  overdrive_end: 'overdrive_off',
+  powerup_start: 'powerup_on',
+  powerup_end: 'powerup_off',
+  shield_absorb: 'shield_pop',
+  player_revived: 'revive',
+  enemy_shield_hit: 'enemy_shield',
+  enemy_shield_break: 'shield_break',
+  enemy_teleport: 'teleport',
+  enemy_cloak: 'cloak',
+  enemy_heal: 'heal',
+  pod_hatch: 'pod_hatch',
+  projectile_burst: 'burst',
+  golden_appear: 'golden',
+  golden_escaped: 'golden_gone',
+  chain_explosion: 'chain_pop',
+  crit: 'crit',
+  drone_fire: 'drone',
+  perk_draft: 'perk_draft',
+  perk_chosen: 'perk_pick',
+  corn_collected: 'corn',
 };
 
 export function soundForEvent(e: GameEvent, hasWeaponChange: boolean): SoundId | null {
+  const mapped = EVENT_SOUND[e.type];
+  if (mapped !== undefined) return mapped;
   switch (e.type) {
     case 'player_fire': return FIRE_SOUND[e.weapon];
     case 'enemy_hit': return 'hit';
@@ -74,3 +107,6 @@ export function soundsForEvents(events: readonly GameEvent[]): SoundId[] {
   }
   return out;
 }
+
+/** Event types with a sound in the table (for coverage tests). */
+export const MAPPED_EVENT_TYPES: readonly GameEvent['type'][] = Object.keys(EVENT_SOUND) as GameEvent['type'][];

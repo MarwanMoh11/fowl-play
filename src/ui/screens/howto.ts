@@ -1,14 +1,16 @@
-// src/ui/screens/howto.ts — OWNER: A4. How to Play: controls, pickups with sprite previews, tips (§8.7).
+// src/ui/screens/howto.ts — OWNER: H4 (from A4). How to Play: four pages (controls, pickups, power-ups, perks and modes) (§8.7).
 import { WEAPON_INFO, type SpriteApi, type SpriteKey } from '../../shared/contracts';
 import { WEAPON_IDS } from '../../sim/types';
 import { createMenu } from '../menu';
 import { buttonItem, h } from '../widgets';
 import type { Host, Screen } from './host';
+import { buildHowPages, HOW_PAGES } from './howto-pages';
 
 export const CONTROL_ROWS: readonly (readonly [string, string, string])[] = [
   ['Move', 'Ship follows the pointer', 'Arrows / WASD'],
   ['Fire (hold)', 'Left button', 'Space / Z / J'],
   ['Missile', 'Right button', 'X / K'],
+  ['Overdrive (full fury)', 'Middle button', 'C / L / Shift'],
   ['Pause', '—', 'Esc / P'],
   ['Confirm / skip', 'Left click', 'Enter / Space'],
 ];
@@ -32,7 +34,7 @@ export const PICKUP_ROWS: readonly PickupRow[] = [
   })),
 ];
 
-function preview(sprites: SpriteApi, key: SpriteKey): HTMLElement {
+export function preview(sprites: SpriteApi, key: SpriteKey): HTMLElement {
   const box = h('span', 'fp-preview');
   try {
     box.append(sprites.toCanvas(key));
@@ -42,45 +44,18 @@ function preview(sprites: SpriteApi, key: SpriteKey): HTMLElement {
   return box;
 }
 
-function controlsPanel(): HTMLElement {
-  const panel = h('section', 'fp-panel fp-howto-col');
-  panel.append(h('h3', 'fp-subheading', 'CONTROLS'));
-  const grid = h('div', 'fp-controls');
-  for (const cell of ['', 'MOUSE', 'KEYBOARD']) grid.append(h('span', 'fp-ch', cell));
-  for (const row of CONTROL_ROWS) for (const [i, cell] of row.entries()) grid.append(h('span', i === 0 ? 'fp-cl' : '', cell));
-  panel.append(grid);
-  return panel;
-}
-
-function pickupsPanel(sprites: SpriteApi): HTMLElement {
-  const panel = h('section', 'fp-panel fp-howto-col');
-  panel.append(h('h3', 'fp-subheading', 'PICKUPS'));
-  for (const row of PICKUP_ROWS) {
-    const line = h('div', 'fp-pickup');
-    const text = h('span', 'fp-pickup-text');
-    text.append(h('b', '', row.name), h('small', '', row.desc));
-    line.append(preview(sprites, row.key), text);
-    panel.append(line);
-  }
-  return panel;
-}
-
-function tipsPanel(): HTMLElement {
-  const panel = h('section', 'fp-panel fp-howto-col');
-  panel.append(h('h3', 'fp-subheading', 'TIPS'));
-  const list = h('ul', 'fp-tips');
-  for (const tip of TIPS) list.append(h('li', '', tip));
-  panel.append(list);
-  return panel;
-}
-
-export function buildHowToPlay(host: Host, back: () => void): Screen {
-  const el = h('div', 'fp-screen fp-howto');
-  const cols = h('div', 'fp-howto-cols');
-  cols.append(controlsPanel(), pickupsPanel(host.sprites), tipsPanel());
+export function buildHowToPlay(host: Host, back: () => void, page = 0): Screen {
+  const current = Math.min(Math.max(0, page), HOW_PAGES.length - 1);
+  const tabItems = HOW_PAGES.map((label, i) => buttonItem(label, () => host.show(buildHowToPlay(host, back, i)), 'fp-tab'));
+  tabItems.forEach((t, i) => t.el.classList.toggle('is-active', i === current));
   const backItem = buttonItem('BACK', back);
+  const el = h('div', 'fp-screen fp-howto');
+  const tabRow = h('div', 'fp-tabs');
+  tabRow.append(...tabItems.map((t) => t.el));
+  const cols = h('div', 'fp-howto-cols');
+  cols.append(...buildHowPages(host.sprites, current));
   const row = h('div', 'fp-row');
   row.append(backItem.el);
-  el.append(h('h2', 'fp-heading fp-heading-float', 'HOW TO PLAY'), cols, row);
-  return { el, menu: createMenu([backItem], { audio: host.audio, onBack: back }) };
+  el.append(h('h2', 'fp-heading fp-heading-float', 'HOW TO PLAY'), tabRow, cols, row);
+  return { el, menu: createMenu([...tabItems, backItem], { audio: host.audio, onBack: back }), startAt: current };
 }

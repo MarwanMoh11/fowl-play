@@ -27,6 +27,14 @@ export interface AudioOptions {
 
 type AudioCtor = new () => AudioContext;
 
+/** The sound player of the running audio system; set by createAudio. Lets menus play effects the frozen interface lacks. */
+let effectSink: ((id: SoundId) => void) | null = null;
+
+/** Plays one sound effect now (achievement and purchase chimes). Silent before the audio system exists. */
+export function playEffect(id: SoundId): void {
+  effectSink?.(id);
+}
+
 function browserContext(): AudioContext | null {
   const g = globalThis as unknown as { AudioContext?: AudioCtor; webkitAudioContext?: AudioCtor };
   const Ctor = g.AudioContext ?? g.webkitAudioContext;
@@ -122,6 +130,7 @@ export function createAudio(opts: AudioOptions = {}): AudioSystem {
     }
   }
 
+  effectSink = play;
   return {
     unlock,
     handleEvents(events: readonly GameEvent[]): void {

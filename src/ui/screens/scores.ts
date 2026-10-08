@@ -1,7 +1,10 @@
-// src/ui/screens/scores.ts — OWNER: A4. High-score table screen (§8.7).
+// src/ui/screens/scores.ts — OWNER: H4 (from A4). High-score tables per mode (campaign, onslaught, boss rush, daily) (§8.7).
+import { MODE_INFO } from '../../shared/contracts';
+import { GAME_MODES, type GameMode } from '../../sim/types';
+import { clearTable, loadTable, tableKeyFor, type HighScore } from '../highscores';
 import { formatScore } from '../hud';
-import { clearHighScores, loadHighScores, type HighScore } from '../highscores';
 import { createMenu } from '../menu';
+import { todayYmd } from '../profile';
 import { buttonItem, h } from '../widgets';
 import type { Host, Screen } from './host';
 
@@ -33,11 +36,22 @@ export function buildScoreTable(list: readonly HighScore[], highlight = -1): HTM
   return table;
 }
 
-export function buildScores(host: Host, back: () => void): Screen {
-  const list = loadHighScores(host.kv);
+/** Tab label and storage key for each mode's table. */
+export function tabsFor(today: number = todayYmd()): { mode: GameMode; label: string; key: string }[] {
+  return GAME_MODES.map((mode) => ({ mode, label: MODE_INFO[mode].name, key: tableKeyFor(mode, today) }));
+}
+
+export function buildScores(host: Host, back: () => void, tab = 0): Screen {
+  const tabs = tabsFor();
+  const current = tabs[Math.min(Math.max(0, tab), tabs.length - 1)];
+  const list = loadTable(host.kv, current.key);
   const el = h('div', 'fp-screen');
   const panel = h('div', 'fp-panel fp-scores');
-  panel.append(h('h2', 'fp-heading', 'HIGH SCORES'), buildScoreTable(list));
+  const tabRow = h('div', 'fp-tabs');
+  const tabItems = tabs.map((t, i) => buttonItem(t.label, () => host.show(buildScores(host, back, i)), 'fp-tab'));
+  tabItems.forEach((t, i) => t.el.classList.toggle('is-active', i === tabs.indexOf(current)));
+  tabRow.append(...tabItems.map((t) => t.el));
+  panel.append(h('h2', 'fp-heading', 'HIGH SCORES'), tabRow, buildScoreTable(list));
   let armed = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   const clear = buttonItem('CLEAR SCORES', () => {
@@ -51,8 +65,8 @@ export function buildScores(host: Host, back: () => void): Screen {
       return;
     }
     if (timer !== null) clearTimeout(timer);
-    clearHighScores(host.kv);
-    host.show(buildScores(host, back));
+    clearTable(host.kv, current.key);
+    host.show(buildScores(host, back, tabs.indexOf(current)));
   });
   clear.disabled = list.length === 0;
   const backItem = buttonItem('BACK', back);
@@ -60,7 +74,8 @@ export function buildScores(host: Host, back: () => void): Screen {
   row.append(clear.el, backItem.el);
   panel.append(row);
   el.append(panel);
-  const menu = createMenu([clear, backItem], { audio: host.audio, onBack: back });
+  const items = [...tabItems, clear, backItem];
+  const menu = createMenu(items, { audio: host.audio, onBack: back });
   clear.el.classList.toggle('is-disabled', clear.disabled === true);
-  return { el, menu };
+  return { el, menu, startAt: tabs.indexOf(current) };
 }

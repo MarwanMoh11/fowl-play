@@ -1,4 +1,4 @@
-// src/ui/menu.ts — OWNER: A4. Keyboard + mouse focus handling for one screen's items (§8.7 Navigation).
+// src/ui/menu.ts — OWNER: H4 (from A4). Keyboard + mouse focus handling for one screen's items (§8.7 Navigation).
 import type { AudioSystem } from '../shared/contracts';
 import { firstEnabled, keyToAction, moveFocus } from './nav';
 import type { MenuItem } from './widgets';
@@ -11,6 +11,8 @@ export interface MenuOpts {
   backKeys?: readonly string[];
   /** Return false to ignore activation (accidental-click guard on end screens). */
   canActivate?: () => boolean;
+  /** Screen-specific keys, tried first. Return true when the key was used (e.g. 1/2/3 on the draft). */
+  onKey?: (e: KeyboardEvent) => boolean;
 }
 
 export interface Menu {
@@ -18,6 +20,8 @@ export interface Menu {
   index(): number;
   focus(i: number, silent?: boolean): void;
   focusFirst(): void;
+  /** Activates item i as if it had been clicked (respects the guard and disabled items). */
+  activate(i: number): void;
   /** Returns true when the key was consumed. */
   handleKey(e: KeyboardEvent): boolean;
 }
@@ -70,6 +74,7 @@ export function createMenu(items: readonly MenuItem[], opts: MenuOpts): Menu {
   });
 
   function handleKey(e: KeyboardEvent): boolean {
+    if (opts.onKey?.(e)) return true;
     const inText = items[index]?.text === true;
     const action = opts.backKeys?.includes(e.code) && !inText ? 'back' : keyToAction(e.code, inText);
     if (!action) return false;
@@ -92,6 +97,7 @@ export function createMenu(items: readonly MenuItem[], opts: MenuOpts): Menu {
     index: () => index,
     focus,
     focusFirst: () => focus(firstEnabled(enabled()), true),
+    activate,
     handleKey,
   };
 }

@@ -189,7 +189,7 @@ describe('menu controller', () => {
 
 describe('screen data', () => {
   it('How to Play lists controls, every gift with its weapon info, and the five tips', () => {
-    expect(CONTROL_ROWS.map((r) => r[0])).toEqual(['Move', 'Fire (hold)', 'Missile', 'Pause', 'Confirm / skip']);
+    expect(CONTROL_ROWS.map((r) => r[0])).toEqual(['Move', 'Fire (hold)', 'Missile', 'Overdrive (full fury)', 'Pause', 'Confirm / skip']);
     expect(PICKUP_ROWS.map((r) => r.key)).toEqual([
       'pickup_drumstick', 'pickup_roast', 'pickup_power_core',
       'pickup_gift_pulse', 'pickup_gift_neutron', 'pickup_gift_laser', 'pickup_gift_arc',
@@ -215,7 +215,7 @@ describe('screen data', () => {
     expect(endTitle({ ...base, victory: false })).toBe('GAME OVER');
     expect(formatDate('2026-03-04T10:00:00.000Z')).toBe('2026-03-04');
     expect(formatDate('')).toBe('-');
-    expect(GAME_VERSION).toBe('v1.0');
+    expect(GAME_VERSION).toBe('v2.0');
     expect(CONTROLS_SUMMARY).toContain('Esc');
   });
 

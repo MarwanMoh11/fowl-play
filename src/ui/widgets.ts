@@ -121,3 +121,14 @@ export function sliderItem(label: string, initial: number, onChange: (v: number)
 export function textItem(input: HTMLInputElement, onEnter: () => void): MenuItem {
   return { el: input, text: true, activate: onEnter };
 }
+
+/** A large clickable card (mode, ship, perk). `adjust` lets Left/Right move between cards. */
+export function cardItem(el: HTMLButtonElement, onActivate: () => void, adjust?: (dir: -1 | 1) => void): MenuItem {
+  return { el, activate: onActivate, adjust, adjustSound: 'move' };
+}
+
+export function cardButton(className: string): HTMLButtonElement {
+  const b = h('button', `fp-card ${className}`.trim());
+  b.type = 'button';
+  return b;
+}

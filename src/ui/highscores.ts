@@ -1,6 +1,6 @@
 // src/ui/highscores.ts — OWNER: A4. Top-10 table persisted through an injectable KV (§8.7 Storage).
 import { STORAGE_KEYS } from '../shared/contracts';
-import type { Difficulty } from '../sim/types';
+import type { Difficulty, GameMode } from '../sim/types';
 import {
   DEFAULT_PILOT_NAME, readJson, removeKey, safeStorage, sanitizeName, writeJson, type KV,
 } from './storage';
@@ -47,8 +47,19 @@ export function normalizeScores(raw: unknown): HighScore[] {
   return list.sort((a, b) => b.score - a.score).slice(0, MAX_HIGH_SCORES);
 }
 
+/** Storage key of the table for a mode: campaign keeps the v1 key; daily tables are per calendar day (YYYYMMDD). */
+export function tableKeyFor(mode: GameMode, dailyDate = 0): string {
+  if (mode === 'campaign') return STORAGE_KEYS.highscores;
+  if (mode === 'daily') return `${STORAGE_KEYS.modeScores}daily.${dailyDate}`;
+  return `${STORAGE_KEYS.modeScores}${mode}`;
+}
+
+export function loadTable(kv: KV | null, key: string): HighScore[] {
+  return normalizeScores(readJson(kv, key));
+}
+
 export function loadHighScores(kv: KV | null = safeStorage()): HighScore[] {
-  return normalizeScores(readJson(kv, STORAGE_KEYS.highscores));
+  return loadTable(kv, STORAGE_KEYS.highscores);
 }
 
 /** Whether `score` would earn a place: positive and beats the 10th entry (or the table has room). */
@@ -72,17 +83,26 @@ export function insertScore(list: readonly HighScore[], entry: HighScore): { lis
   return { list: next.slice(0, MAX_HIGH_SCORES), rank };
 }
 
-/** Stores the entry if it qualifies. Returns its 0-based rank, or -1 when it did not make the table. */
-export function addHighScore(entry: HighScore, kv: KV | null = safeStorage()): number {
-  const current = loadHighScores(kv);
+/** Stores the entry in the table at `key` if it qualifies. Returns its 0-based rank, or -1 when it did not make the table. */
+export function addToTable(entry: HighScore, kv: KV | null, key: string): number {
+  const current = loadTable(kv, key);
   if (!qualifiesFor(current, entry.score)) return -1;
   const clean = parseEntry(entry);
   if (!clean) return -1;
   const { list, rank } = insertScore(current, clean);
-  writeJson(kv, STORAGE_KEYS.highscores, list);
+  writeJson(kv, key, list);
   return rank;
 }
 
+/** Stores the entry in the campaign table if it qualifies. Returns its 0-based rank, or -1. */
+export function addHighScore(entry: HighScore, kv: KV | null = safeStorage()): number {
+  return addToTable(entry, kv, STORAGE_KEYS.highscores);
+}
+
+export function clearTable(kv: KV | null, key: string): void {
+  removeKey(kv, key);
+}
+
 export function clearHighScores(kv: KV | null = safeStorage()): void {
-  removeKey(kv, STORAGE_KEYS.highscores);
+  clearTable(kv, STORAGE_KEYS.highscores);
 }

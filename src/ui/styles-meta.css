@@ -1,0 +1,142 @@
+/* src/ui/styles-meta.css — OWNER: H4. HENPOCALYPSE screens: title flow, cards, loadout, draft, hangar, codex, achievements, toasts. */
+.fp-subtitle {
+  margin: 2px 0 0; font-size: 26px; letter-spacing: 8px; color: #39FF88;
+  text-shadow: 0 2px 0 #1B1030, 0 0 12px rgba(0, 0, 0, 0.6);
+}
+.fp-title-menu { margin-top: 16px; gap: 8px; }
+.fp-title-menu .fp-btn { height: 46px; font-size: 20px; }
+
+/* Cards: mode, ship and perk pickers. */
+.fp-card {
+  appearance: none; box-sizing: border-box; font: inherit; color: #fff; text-align: left;
+  display: flex; flex-direction: column; gap: 6px; padding: 12px 16px;
+  background: rgba(16, 10, 40, 0.9); border: 2px solid #6C5CE7; border-radius: 14px;
+  cursor: pointer; outline: none; transition: transform 0.08s ease-out, border-color 0.08s ease-out, background 0.08s ease-out;
+}
+.fp-card:hover, .fp-card.is-focused, .fp-card:focus-visible {
+  border-color: #FFD60A; background: rgba(42, 26, 96, 0.94); transform: scale(1.02);
+}
+.fp-card.is-disabled { opacity: 0.45; cursor: default; }
+.fp-mode-screen .fp-modes { width: 640px; }
+.fp-mode-list { display: flex; flex-direction: column; gap: 10px; }
+.fp-mode { width: 100%; border-left: 8px solid var(--mode, #6C5CE7); }
+.fp-mode-campaign { --mode: #FFD60A; }
+.fp-mode-onslaught { --mode: #FF3B3B; }
+.fp-mode-boss_rush { --mode: #F72585; }
+.fp-mode-daily { --mode: #39FF88; }
+.fp-card-title { font-size: 24px; color: #FFD60A; }
+.fp-card-desc { font-size: 14px; font-weight: 600; line-height: 1.3; opacity: 0.9; }
+.fp-card-foot { font-size: 14px; color: #9AA7B8; }
+
+/* Loadout. */
+.fp-loadout { width: 1000px; }
+.fp-loadout-cols { display: flex; gap: 28px; align-items: flex-start; }
+.fp-loadout-col { width: 440px; display: flex; flex-direction: column; gap: 10px; }
+.fp-loadout-col .fp-subheading { text-align: left; margin: 0; }
+.fp-ship-pick { width: 100%; padding: 10px 14px; }
+.fp-ship-card { display: grid; grid-template-columns: 96px 1fr; column-gap: 14px; row-gap: 6px; align-items: center; }
+.fp-ship-card.is-locked .fp-ship-art { opacity: 0.45; }
+.fp-ship-art { grid-row: span 2; display: flex; align-items: center; justify-content: center; }
+.fp-ship-art canvas { max-width: 96px; max-height: 96px; width: auto; height: auto; }
+.fp-ship-head { display: flex; flex-direction: column; }
+.fp-ship-name { font-size: 22px; color: var(--ship, #FFD60A); }
+.fp-ship-status { font-size: 13px; color: #9AA7B8; }
+.fp-ship-desc { grid-column: 1 / -1; margin: 0; font-size: 14px; font-weight: 600; line-height: 1.3; opacity: 0.9; }
+.fp-bars { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; }
+.fp-bar { display: grid; grid-template-columns: 104px 1fr; align-items: center; gap: 8px; font-size: 11px; letter-spacing: 1px; }
+.fp-bar-track { position: relative; height: 8px; background: #2A2340; border-radius: 4px; }
+.fp-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ship, #39FF88); border-radius: 4px; }
+.fp-details { min-height: 46px; margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35; color: #cfc8ee; }
+
+/* Tabs. */
+.fp-tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
+.fp-tab { width: auto; height: 40px; padding: 0 16px; font-size: 16px; }
+.fp-tab.is-active { border-color: #FFD60A; color: #FFD60A; }
+
+/* Draft. */
+.fp-draft-cards { display: flex; gap: 22px; }
+.fp-perk { width: 262px; min-height: 252px; border: 3px solid var(--rarity, #6C5CE7); position: relative; }
+.fp-perk::before { content: ''; position: absolute; inset: 0; border-radius: 12px; background: var(--perk, transparent); opacity: 0.07; pointer-events: none; }
+.fp-perk-key { font-size: 13px; color: #FFD60A; }
+.fp-perk-rarity { font-size: 12px; letter-spacing: 2px; color: var(--rarity, #9AA7B8); }
+.fp-perk-name { font-size: 24px; color: var(--perk, #fff); line-height: 1.1; }
+.fp-perk-desc { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35; flex: 1; }
+.fp-perk-stacks { font-size: 13px; color: #9AA7B8; }
+.fp-draft-hint { margin: 0; font-size: 14px; opacity: 0.75; letter-spacing: 1px; }
+.fp-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 860px; }
+.fp-chip { padding: 3px 10px; border-radius: 999px; background: #2A2340; font-size: 13px; }
+.fp-run-lines { margin-top: 10px; text-align: center; }
+.fp-run-line { margin: 4px 0; font-size: 14px; font-weight: 600; opacity: 0.9; }
+
+/* Rewards on the end screen. */
+.fp-reward { margin: 12px auto 0; max-width: 560px; }
+.fp-reward-corn { font-size: 34px; font-weight: 900; color: #FFD60A; text-shadow: 0 3px 0 #1B1030; }
+.fp-reward-ach { font-size: 15px; letter-spacing: 1px; }
+.fp-reward-ach.is-bronze { color: #E0A46A; }
+.fp-reward-ach.is-silver { color: #DCE3EC; }
+.fp-reward-ach.is-gold { color: #FFD60A; }
+
+/* Hangar and rows. */
+.fp-hangar { width: 1000px; }
+.fp-hangar-cols { display: flex; gap: 24px; }
+.fp-hangar-col { width: 470px; display: flex; flex-direction: column; gap: 8px; }
+.fp-hangar-col .fp-subheading { text-align: left; margin: 0; }
+.fp-stat-line { margin: -4px 0 10px; text-align: center; font-size: 13px; letter-spacing: 1px; opacity: 0.8; }
+.fp-corn-balance { margin: 0 0 8px; text-align: center; font-size: 18px; color: #FFD60A; letter-spacing: 2px; }
+.fp-row-item {
+  appearance: none; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; font: inherit; color: #fff; text-align: left;
+  background: rgba(16, 10, 40, 0.9); border: 2px solid #6C5CE7; border-radius: 10px; cursor: pointer; outline: none;
+}
+.fp-row-item:hover, .fp-row-item.is-focused, .fp-row-item:focus-visible { border-color: #FFD60A; background: rgba(42, 26, 96, 0.94); }
+.fp-row-item.is-disabled, .fp-row-item:disabled { opacity: 0.45; cursor: default; }
+.fp-row-art { flex: none; width: 52px; height: 44px; display: flex; align-items: center; justify-content: center; }
+.fp-row-art canvas { max-width: 48px; max-height: 44px; width: auto; height: auto; }
+.fp-row-text { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.fp-row-name { font-size: 17px; }
+.fp-row-sub { font-size: 12px; font-weight: 600; opacity: 0.75; line-height: 1.2; }
+.fp-row-detail { font-size: 14px; color: #FFD60A; white-space: nowrap; }
+
+/* Achievements. */
+.fp-ach { width: 1160px; }
+.fp-ach-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(14, auto); grid-auto-flow: column; gap: 4px 22px; }
+.fp-ach-row { padding: 3px 6px 3px 10px; border-left: 3px solid #6C5CE7; opacity: 0.42; display: flex; flex-direction: column; }
+.fp-ach-row.is-unlocked { opacity: 1; }
+.fp-ach-row.is-bronze { border-color: #E0A46A; }
+.fp-ach-row.is-silver { border-color: #DCE3EC; }
+.fp-ach-row.is-gold { border-color: #FFD60A; }
+.fp-ach-head { display: flex; align-items: baseline; gap: 8px; }
+.fp-ach-tier { font-size: 10px; letter-spacing: 1px; opacity: 0.8; width: 46px; }
+.fp-ach-name { font-size: 15px; }
+.fp-ach-desc { font-size: 12px; font-weight: 600; opacity: 0.85; }
+.fp-ach-date { font-size: 11px; opacity: 0.6; }
+
+/* Codex. */
+.fp-codex { width: 1180px; }
+.fp-codex-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px;
+  max-height: 430px; overflow: hidden; margin-top: 4px;
+}
+.fp-codex-card {
+  box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px;
+  text-align: center; border: 1px solid #3A2F63; border-radius: 10px; background: rgba(0, 0, 0, 0.2);
+}
+.fp-codex-card.is-seen { border-color: var(--accent, #6C5CE7); }
+.fp-codex-art { height: 52px; display: flex; align-items: center; justify-content: center; }
+.fp-codex-art canvas { max-width: 56px; max-height: 52px; width: auto; height: auto; }
+.fp-codex-art.is-silhouette canvas { filter: brightness(0); opacity: 0.8; }
+.fp-codex-name { font-size: 13px; }
+.fp-codex-text { font-size: 11px; font-weight: 600; line-height: 1.2; opacity: 0.85; }
+.fp-codex-card.is-unseen .fp-codex-name { opacity: 0.6; }
+
+/* Toasts: outside #ui, so screen changes never remove them. */
+.fp-toasts {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 50;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+}
+.fp-toast {
+  padding: 8px 18px; font-size: 18px; letter-spacing: 1px; color: #FFD60A; white-space: nowrap;
+  background: rgba(16, 10, 40, 0.92); border: 2px solid #FFD60A; border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); animation: fp-toast-in 0.2s ease-out;
+}
+@keyframes fp-toast-in { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

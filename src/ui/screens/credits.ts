@@ -4,6 +4,7 @@ import { buttonItem, h } from '../widgets';
 import type { Host, Screen } from './host';
 
 export const CREDITS_LINES = [
+  'Lore: the Cluckhive Empire scrambles every world in the Milky Whey. You are the last squadron of the Coop Defense Force.',
   'Design and code: an AI agent team.',
   'Inspired by classic chicken-invasion arcade shooters.',
   'All art, music and sound generated procedurally.',

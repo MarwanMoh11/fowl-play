@@ -1,13 +1,16 @@
 // src/audio/sfx.ts — OWNER: A4. Sound-effect recipes (§8.8). Every recipe is pure synthesis, no samples.
 import { arpeggio, midiToHz, noise, tone, type VoiceEnv } from './synth';
+import { HENPO_SFX, HENPO_SOUND_IDS } from './sfx-henpo';
 
-export const SOUND_IDS = [
+const BASE_SOUND_IDS = [
   'fire_pulse', 'fire_neutron', 'fire_laser', 'fire_arc', 'hit', 'cluck', 'peep', 'rock_break',
   'egg_drop', 'egg_splat', 'zap', 'food', 'roast', 'power', 'gift', 'missile_gain', 'missile_launch',
   'boom_big', 'overheat', 'cooled', 'player_die', 'respawn', 'one_up', 'wave_start', 'siren', 'charge',
   'telegraph', 'roar', 'boss_die', 'fanfare', 'game_over', 'tick',
   'ui_move', 'ui_select', 'ui_back', 'ui_error',
 ] as const;
+export type BaseSoundId = typeof BASE_SOUND_IDS[number];
+export const SOUND_IDS = [...BASE_SOUND_IDS, ...HENPO_SOUND_IDS] as const;
 export type SoundId = typeof SOUND_IDS[number];
 
 export interface SfxDef {
@@ -53,7 +56,7 @@ function fanfare(env: VoiceEnv, t: number): void {
   }
 }
 
-export const SFX: Record<SoundId, SfxDef> = {
+const BASE_SFX: Record<BaseSoundId, SfxDef> = {
   fire_pulse: {
     throttle: 0.06, dur: 0.08, pitchVar: STD_VAR,
     play: (e, t) => { tone(e, t, { type: 'square', f0: 1200, f1: 600, d: 0.07, gain: 0.07 }); },
@@ -213,3 +216,5 @@ export const SFX: Record<SoundId, SfxDef> = {
     play: (e, t) => { tone(e, t, { type: 'square', f0: 200, d: 0.06, gain: 0.05 }); },
   },
 };
+
+export const SFX: Record<SoundId, SfxDef> = { ...BASE_SFX, ...HENPO_SFX };
