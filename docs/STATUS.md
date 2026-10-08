@@ -1,5 +1,7 @@
 # STATUS
 
+> **HENPOCALYPSE (v2.0) is in progress.** Plan and spec: `docs/HENPOCALYPSE.md`. Per-agent status lives in `docs/status/H1.md` … `H5.md`. The v1 sections below are history.
+
 PHASE 0 DONE — CONTRACT v1
 
 Each agent edits ONLY its own section. Contract changes are announced here as `CONTRACT vN: <change>`.
