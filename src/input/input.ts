@@ -1,7 +1,8 @@
-// src/input/input.ts — OWNER: A1. Keyboard + mouse → InputFrame (§7.2).
+// src/input/input.ts — OWNER: A1 (touch wiring: D). Keyboard + mouse + touch → InputFrame (§7.2).
 import type { Settings, View } from '../shared/contracts';
 import type { InputFrame, Vec2 } from '../sim/types';
 import { toLogical } from '../app/view';
+import { createTouchControls } from './touch';
 
 const POINTER_ACTIVATE_PX = 4;
 
@@ -24,11 +25,20 @@ export interface InputSystem {
   setCapture(on: boolean): void;
 }
 
+export interface InputOptions {
+  /** Ship position in logical px, or null when no run is active (touch steering anchors to it). */
+  getShipPos?(): Vec2 | null;
+  /** Which touch buttons can act right now (unavailable ones are dimmed). */
+  getAvailability?(): { missile: boolean; overdrive: boolean };
+  /** Pause button, and the portrait rotate hint while playing. */
+  onPause?(): void;
+}
+
 function isFormTarget(t: EventTarget | null): boolean {
   return t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName));
 }
 
-export function createInput(canvas: HTMLCanvasElement): InputSystem {
+export function createInput(canvas: HTMLCanvasElement, opts: InputOptions = {}): InputSystem {
   const held = new Set<string>();
   let mouseFire = false;
   let missileLatch = false;
@@ -39,6 +49,12 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
   let client: Vec2 | null = null;   // last mouse position in client px
   let anchor: Vec2 | null = null;   // mouse position at the last keyboard-move press
 
+  const touch = createTouchControls(canvas.parentElement ?? document.body, {
+    getShipPos: () => opts.getShipPos?.() ?? null,
+    getAvailability: () => opts.getAvailability?.() ?? { missile: false, overdrive: false },
+    onPause: () => opts.onPause?.(),
+  });
+
   function anyHeld(keys: Set<string>): boolean {
     for (const k of keys) if (held.has(k)) return true;
     return false;
@@ -46,6 +62,7 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
 
   window.addEventListener('keydown', (e) => {
     if (isFormTarget(e.target)) return;
+    touch.releaseToMouse();
     if (capture && GAME_KEYS.has(e.code)) e.preventDefault();
     held.add(e.code);
     if (LEFT.has(e.code) || RIGHT.has(e.code) || UP.has(e.code) || DOWN.has(e.code)) {
@@ -64,7 +81,13 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
     held.clear();
     mouseFire = false;
   });
+  const onMouseActivity = (e: PointerEvent): void => {
+    if (e.pointerType === 'mouse') touch.releaseToMouse(); // hybrid devices: a real mouse takes over
+  };
+  window.addEventListener('pointerdown', onMouseActivity);
+  window.addEventListener('pointermove', onMouseActivity);
   window.addEventListener('mousemove', (e) => {
+    if (touch.ignoresMouse()) return; // compat event from a finger
     client = { x: e.clientX, y: e.clientY };
     if (pointerActive) return;
     if (!anchor) {
@@ -74,6 +97,7 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
     if (Math.hypot(client.x - anchor.x, client.y - anchor.y) > POINTER_ACTIVATE_PX) pointerActive = true;
   });
   canvas.addEventListener('mousedown', (e) => {
+    if (touch.ignoresMouse()) return; // compat event from a finger: must not fire, skip or steer
     client = { x: e.clientX, y: e.clientY };
     if (e.button === 0) {
       mouseFire = true;
@@ -94,15 +118,18 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
     sample(view: View, settings: Settings): InputFrame {
       const moveX = (anyHeld(RIGHT) ? 1 : 0) - (anyHeld(LEFT) ? 1 : 0);
       const moveY = (anyHeld(DOWN) ? 1 : 0) - (anyHeld(UP) ? 1 : 0);
-      const pointer = settings.mouseControl && pointerActive && client ? toLogical(view, client.x, client.y) : null;
+      const t = touch.sample();
+      const mouse = settings.mouseControl && pointerActive && client && !touch.isTouchMode()
+        ? toLogical(view, client.x, client.y)
+        : null;
       const frame: InputFrame = {
         moveX,
         moveY,
-        pointer,
-        fire: settings.autoFire || mouseFire || anyHeld(FIRE),
-        missile: missileLatch,
-        skip: skipLatch,
-        overdrive: overdriveLatch,
+        pointer: t.pointer ?? mouse,
+        fire: settings.autoFire || mouseFire || anyHeld(FIRE) || t.fire,
+        missile: missileLatch || t.missile,
+        skip: skipLatch || t.tap,
+        overdrive: overdriveLatch || t.overdrive,
       };
       missileLatch = false;
       skipLatch = false;
@@ -115,9 +142,11 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
       missileLatch = false;
       skipLatch = false;
       overdriveLatch = false;
+      touch.reset();
     },
     setCapture(on: boolean): void {
       capture = on;
+      touch.setEnabled(on);
     },
   };
 }

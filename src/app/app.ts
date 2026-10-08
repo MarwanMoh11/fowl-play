@@ -12,7 +12,9 @@ import { createAudio } from '../audio';
 import { createUI } from '../ui';
 import { loadSettings, safeStorage } from '../ui/storage';
 import { createInput, type InputSystem } from '../input/input';
-import { applyView, computeView, type ViewLayout } from './view';
+import { requestLandscapePlay } from '../input/touch';
+import { FURY_MAX } from '../sim/tuning/loadout';
+import { applyView, currentView, observeViewport, type ViewLayout } from './view';
 import { parseParams, type UrlParams } from './params';
 import { buildRunSummary } from './summary';
 import { createFpsMeter, type FpsMeter } from './fps';
@@ -49,7 +51,17 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
   const renderer = createRenderer(canvas);
   const audio = createAudio();
   audio.setVolumes(settings.masterVolume, settings.musicVolume, settings.sfxVolume);
-  const input = createInput(canvas);
+  const input = createInput(canvas, {
+    getShipPos: () => app.state?.player.pos ?? null,
+    getAvailability: () => {
+      const p = app.state?.player;
+      return {
+        missile: !!p && p.alive && p.missiles > 0,
+        overdrive: !!p && p.alive && p.fury >= FURY_MAX && p.overdrive <= 0,
+      };
+    },
+    onPause: () => pause(),
+  });
   let lastStart: StartOptions = { difficulty: settings.difficulty, mode: 'campaign', loadout: DEFAULT_LOADOUT };
   let dailyDate = 0;
 
@@ -73,6 +85,7 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
 
   function startGame(opts: StartOptions): void {
     lastStart = opts;
+    requestLandscapePlay(); // phones only; fullscreen + landscape lock, best effort
     let seed = newSeed();
     let loadout = opts.loadout;
     dailyDate = 0;
@@ -147,7 +160,7 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
   const app: App = {
     screen: 'title',
     state: null,
-    view: computeView(innerWidth, innerHeight, devicePixelRatio || 1),
+    view: currentView(),
     settings,
     params,
     renderer,
@@ -173,11 +186,11 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
   };
 
   function resize(): void {
-    app.view = computeView(innerWidth, innerHeight, devicePixelRatio || 1);
+    app.view = currentView();
     applyView(canvas, uiRoot, app.view);
     renderer.resize(app.view);
   }
-  window.addEventListener('resize', resize);
+  observeViewport(resize);
   resize();
 
   window.addEventListener('keydown', (e) => {
