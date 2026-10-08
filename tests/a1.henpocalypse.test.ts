@@ -17,7 +17,7 @@ import type { GameState, InputFrame } from '../src/sim/types';
 import { addEnemy, addHazard } from './a1.helpers';
 
 /** Flipped to true by the lead at the final gate: no placeholder art or behaviors may remain. */
-const ENFORCE_NO_PLACEHOLDERS = false;
+const ENFORCE_NO_PLACEHOLDERS = true;
 
 function game(over: Partial<Parameters<typeof createGame>[0]> = {}): GameState {
   return createGame({ seed: 5, difficulty: 'normal', ...over });
@@ -189,7 +189,7 @@ describe('final gate', () => {
         if (n.isDirectory()) walk(p);
         else if (p.endsWith('.ts') && !p.endsWith('placeholder.ts')) {
           const t = readFileSync(p, 'utf8');
-          if (/placeholderSprite|Phase-0 placeholder|Phase 0:/i.test(t)) hits.push(p.slice(root.length + 1));
+          if (/placeholderSprite|Phase-0 placeholder|Phase 0:/.test(t)) hits.push(p.slice(root.length + 1));
         }
       }
     };

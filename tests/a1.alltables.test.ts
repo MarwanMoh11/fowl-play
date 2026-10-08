@@ -1,4 +1,4 @@
-// tests/a1.alltables.test.ts — OWNER: A1. Every wave of chapters 1–6 is spawnable and clearable (§10.3).
+// tests/a1.alltables.test.ts — OWNER: LEAD. Every wave of chapters 1–13 is spawnable and clearable (§10.3).
 import { describe, expect, it } from 'vitest';
 import { createGame, NEUTRAL_INPUT, step } from '../src/sim/game';
 import { applyDebug } from '../src/sim/debug';
@@ -41,7 +41,7 @@ function checkWave(chapter: number, wave: number): void {
 }
 
 describe('all tables', () => {
-  for (let chapter = 1; chapter <= 6; chapter++) {
+  for (let chapter = 1; chapter <= 13; chapter++) {
     it(`chapter ${chapter}: every wave spawns and clears`, () => {
       for (let wave = 1; wave <= 10; wave++) checkWave(chapter, wave);
     }, 60_000);
