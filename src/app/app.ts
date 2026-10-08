@@ -104,7 +104,11 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
   }
 
   const ui = createUI(uiRoot, {
-    onStart: startGame,
+    onStart(opts: StartOptions): void {
+      // A double tap on Start must not begin a second run over the first one.
+      if (app.screen === 'playing' || app.screen === 'paused' || app.screen === 'draft') return;
+      startGame(opts);
+    },
     onResume(): void {
       if (app.screen !== 'paused') return;
       input.reset();
@@ -113,6 +117,7 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
       audio.unlock();
     },
     onRestart(): void {
+      if (app.screen === 'playing' || app.screen === 'draft') return;
       startGame(lastStart);
     },
     onDraftChoice(index: number): void {
@@ -130,7 +135,7 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
       ui.showTitle();
     },
     onContinueEndless(): void {
-      if (!app.state) return;
+      if (!app.state || (app.screen !== 'gameover' && app.screen !== 'victory')) return;
       const from = app.state.events.length;
       continueEndless(app.state);
       input.reset();
@@ -198,8 +203,10 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
     if (document.hidden) pause();
   });
   window.addEventListener('blur', pause);
-  window.addEventListener('pointerdown', () => audio.unlock(), { capture: true });
-  window.addEventListener('keydown', () => audio.unlock(), { capture: true });
+  // iOS Safari only starts or resumes audio from a completed tap (touchend/click), so every gesture type unlocks.
+  for (const type of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const) {
+    window.addEventListener(type, () => audio.unlock(), { capture: true });
+  }
 
   if (params.gallery) {
     setScreen('title');

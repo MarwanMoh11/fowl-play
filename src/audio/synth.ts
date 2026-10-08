@@ -98,6 +98,13 @@ function envelope(g: AudioParam, t: number, a: number, sustain: number, d: numbe
   g.exponentialRampToValueAtTime(SILENCE, t + a + sustain + d);
 }
 
+/** Disconnects a finished voice's nodes, so a long session does not keep every dead voice in the graph. */
+function releaseWhenEnded(src: AudioScheduledSourceNode, nodes: readonly AudioNode[]): void {
+  src.onended = () => {
+    for (const n of nodes) n.disconnect();
+  };
+}
+
 /** Plays one enveloped oscillator note starting at time t. Returns its total length in seconds. */
 export function tone(env: VoiceEnv, t: number, o: ToneOpts): number {
   const { ctx } = env;
@@ -118,10 +125,12 @@ export function tone(env: VoiceEnv, t: number, o: ToneOpts): number {
   }
   const g = ctx.createGain();
   envelope(g.gain, t, a, sustain, o.d, o.gain);
+  const chain: AudioNode[] = [osc];
   let tail: AudioNode = osc;
   const insert = (node: AudioNode): void => {
     tail.connect(node);
     tail = node;
+    chain.push(node);
   };
   if (o.lp !== undefined) {
     const f = ctx.createBiquadFilter();
@@ -151,10 +160,12 @@ export function tone(env: VoiceEnv, t: number, o: ToneOpts): number {
     depth.connect(g.gain);
     lfo.start(t);
     lfo.stop(t + total + STOP_PAD);
+    releaseWhenEnded(lfo, [lfo, depth]);
   }
   tail.connect(env.out);
   osc.start(t);
   osc.stop(t + total + STOP_PAD);
+  releaseWhenEnded(osc, chain);
   return total;
 }
 
@@ -178,6 +189,7 @@ export function noise(env: VoiceEnv, t: number, o: NoiseOpts): number {
   g.connect(env.out);
   src.start(t, env.rand() * (NOISE_SECONDS * 0.5));
   src.stop(t + total + STOP_PAD);
+  releaseWhenEnded(src, [src, f, g]);
   return total;
 }
 

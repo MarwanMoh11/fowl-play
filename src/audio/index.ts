@@ -23,6 +23,8 @@ export interface AudioOptions {
   createContext?: () => AudioContext;
   random?: () => number;
   timer?: MusicTimer;
+  /** Test hook: the document whose visibility stops the audio clock (null = none). */
+  doc?: Pick<Document, 'hidden' | 'addEventListener'> | null;
 }
 
 type AudioCtor = new () => AudioContext;
@@ -97,19 +99,25 @@ export function createAudio(opts: AudioOptions = {}): AudioSystem {
         }
         build(c);
       }
-      if (ctx && ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
+      resume();
     } catch {
       failed = true;
       ctx = null;
     }
   }
 
+  /** Restarts a context the browser suspended or interrupted (call, screen lock, app switch). Refused resumes are ignored. */
+  function resume(): void {
+    if (ctx && (ctx.state === 'suspended' || ctx.state === 'interrupted')) void ctx.resume().catch(() => undefined);
+  }
+
   function play(id: SoundId): void {
-    if (!ctx || !base || !sfxBus) return;
+    // Nothing is scheduled while the clock is stopped: queued sounds would all start in a burst on resume.
+    if (!ctx || !base || !sfxBus || ctx.state !== 'running') return;
     const def = SFX[id];
     const now = ctx.currentTime;
     if (!throttle.allow(id, now, def.throttle)) return;
-    if (!limiter.tryAcquire(now, def.dur)) return;
+    if (!limiter.tryAcquire(now, def.dur, id)) return;
     const pitch = 1 + (rand() * 2 - 1) * def.pitchVar;
     try {
       def.play({ ...base, out: sfxBus, pitch }, now + SCHEDULE_AHEAD_S);
@@ -129,6 +137,17 @@ export function createAudio(opts: AudioOptions = {}): AudioSystem {
       tickClock = TALLY_TICK_EVERY_S;
     }
   }
+
+  /** A hidden page stops the audio clock: nothing is queued while nobody hears it, and it resumes where it stopped. */
+  function suspend(): void {
+    if (ctx && ctx.state === 'running') void ctx.suspend().catch(() => undefined);
+  }
+
+  const doc = opts.doc === undefined ? (typeof document !== 'undefined' ? document : null) : opts.doc;
+  doc?.addEventListener('visibilitychange', () => {
+    if (doc.hidden) suspend();
+    else resume();
+  });
 
   effectSink = play;
   return {

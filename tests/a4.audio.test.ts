@@ -164,9 +164,10 @@ describe('audio system', () => {
     audio.unlock();
     const kinds = ['overheat', 'heat_recovered'] as const;
     for (let i = 0; i < 40; i++) audio.handleEvents([{ type: kinds[i % 2] }]);
-    // overheat = 3 oscillators per play, cooled = 1 oscillator per play; 24 voices maximum
+    // overheat = 3 oscillators per play, cooled = 1 oscillator per play. Updated by QC: one sound now holds at most
+    // MAX_VOICES_PER_SOUND (6) voices, so this mixed burst is 6 + 6 voices instead of 12 + 12.
     const oscillators = fake.created.createOscillator;
-    expect(oscillators).toBe(12 * 3 + 12 * 1);
+    expect(oscillators).toBe(6 * 3 + 6 * 1);
   });
 
   it('plays tally ticks while the chapter tally counts up', () => {

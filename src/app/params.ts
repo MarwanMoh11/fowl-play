@@ -1,7 +1,7 @@
 // src/app/params.ts — OWNER: LEAD. URL parameters (§7.15, HENPOCALYPSE debug).
 import type { Difficulty, GameMode, MutatorId, ShipId } from '../sim/types';
 import { GAME_MODES, SHIP_IDS } from '../sim/types';
-import { MUTATORS } from '../sim/tuning/loadout';
+import { MUTATOR_IDS } from '../sim/tuning/loadout';
 
 export interface UrlParams {
   debug: boolean;
@@ -40,6 +40,14 @@ export function parseParams(search: string): UrlParams {
     gallery: q.get('gallery') === '1',
     mode: (GAME_MODES as readonly string[]).includes(q.get('mode') ?? '') ? (q.get('mode') as GameMode) : null,
     ship: (SHIP_IDS as readonly string[]).includes(q.get('ship') ?? '') ? (q.get('ship') as ShipId) : null,
-    mutators: (q.get('mutators') ?? '').split(',').filter((m): m is MutatorId => m in MUTATORS),
+    mutators: parseMutators(q.get('mutators') ?? ''),
   };
+}
+
+/** Known mutator ids, each once. `in` would also accept inherited keys such as "constructor". */
+export function parseMutators(raw: string): MutatorId[] {
+  const known = new Set<string>(MUTATOR_IDS);
+  const picked = new Set<MutatorId>();
+  for (const m of raw.split(',')) if (known.has(m)) picked.add(m as MutatorId);
+  return [...picked];
 }

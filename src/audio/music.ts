@@ -10,7 +10,6 @@ export const LOOKAHEAD_S = 0.12;
 export const CROSSFADE_S = 0.5;
 export const DUCK_SMOOTH_S = 0.08;
 const START_DELAY_S = 0.05;
-const RESYNC_AFTER_S = 0.25;
 const REMOVE_PAD_S = 0.1;
 const END_LINGER_S = 2;
 const LEAD_GAIN = 0.07;
@@ -105,9 +104,22 @@ function advance(p: Playing, tail: { fromBar: number; level: number } | undefine
     p.step = tail.fromBar * STEPS_PER_BAR;
     p.level = tail.level;
   } else {
+    // The last notes ring out for END_LINGER_S; the gain fades over the final CROSSFADE_S so the voice is never cut loud.
     p.ended = true;
-    p.removeAt = p.nextTime + END_LINGER_S;
+    const fadeAt = p.nextTime + END_LINGER_S - CROSSFADE_S;
+    p.gain.gain.setValueAtTime(1, fadeAt);
+    p.gain.gain.linearRampToValueAtTime(0, fadeAt + CROSSFADE_S);
+    p.removeAt = fadeAt + CROSSFADE_S + REMOVE_PAD_S;
   }
+}
+
+/**
+ * After a stall (throttled timer, long frame) the steps that fell due are not played as a burst: the grid moves past
+ * them, so only the newest missed step sounds, and it sounds late rather than stacked on the others.
+ */
+function skipStale(p: Playing, now: number, tail: { fromBar: number; level: number } | undefined): void {
+  const missed = Math.ceil((now - p.nextTime) / p.stepLen);
+  for (let i = 1; i < missed && !p.ended; i++) advance(p, tail);
 }
 
 const defaultTimer: MusicTimer = {
@@ -123,6 +135,7 @@ export function createMusicEngine(
   const voices: Playing[] = [];
   let current: Playing | null = null;
   let handle: unknown = null;
+  let duckTo = NaN;
 
   function fadeOut(p: Playing, now: number): void {
     p.gain.gain.cancelScheduledValues(now);
@@ -136,8 +149,8 @@ export function createMusicEngine(
     const now = ctx.currentTime;
     for (const p of voices) {
       if (p.ended) continue;
-      if (p.nextTime < now - RESYNC_AFTER_S) p.nextTime = now + START_DELAY_S;
       const tail = TRACK_TAILS[p.name];
+      if (p.nextTime < now) skipStale(p, now, tail);
       while (!p.ended && p.nextTime < now + LOOKAHEAD_S) {
         scheduleStep(p);
         advance(p, tail);
@@ -173,6 +186,9 @@ export function createMusicEngine(
       pump();
     },
     setDuck(level: number): void {
+      // Called every frame; only a real change adds an automation event.
+      if (level === duckTo) return;
+      duckTo = level;
       duck.gain.setTargetAtTime(level, ctx.currentTime, DUCK_SMOOTH_S);
     },
     pump,
