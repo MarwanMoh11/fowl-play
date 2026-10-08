@@ -18,8 +18,9 @@ function boltVsEnemies(state: GameState, bolt: Projectile): void {
   const n = enemies.length;
   for (let i = 0; i < n; i++) {
     const e = enemies[i];
-    if (!e.alive || bolt.hitIds.includes(e.id)) continue;
+    if (!e.alive) continue;
     if (!overlaps(bolt.pos.x, bolt.pos.y, e.pos.x, e.pos.y, bolt.radius + e.radius)) continue;
+    if (bolt.hitIds.includes(e.id)) continue; // scanned only for the few enemies the bolt actually overlaps
     if (e.invulnerable) {
       bolt.alive = false;
       return;

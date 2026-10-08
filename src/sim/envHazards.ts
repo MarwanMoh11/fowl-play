@@ -55,12 +55,14 @@ function scheduleLightning(state: GameState, at: number, strikes: EnvStrike[]): 
 
 /** Moves the due strikes into the hazard list (full-height columns). */
 function fireDue(state: GameState, now: number): void {
-  const amb = ambientOf(state.waveRt);
-  const due = amb.strikes.filter((s) => s.at <= now);
-  amb.strikes = amb.strikes.filter((s) => s.at > now);
-  for (const s of due) {
-    addLineHazard(state, -1, s.kind, { x: s.x, y: 0 }, { x: s.x, y: WORLD_H }, s.width, s.ttl);
+  const list = ambientOf(state.waveRt).strikes;
+  let keep = 0;
+  for (let r = 0; r < list.length; r++) {  // in place: this runs every tick while strikes are pending
+    const s = list[r];
+    if (s.at <= now) addLineHazard(state, -1, s.kind, { x: s.x, y: 0 }, { x: s.x, y: WORLD_H }, s.width, s.ttl);
+    else list[keep++] = s;
   }
+  list.length = keep;
 }
 
 /** Chapter 11: one gravity well drifts slowly across y = 200. Its ttl is refreshed every tick, so it lapses shortly after the wave ends. */

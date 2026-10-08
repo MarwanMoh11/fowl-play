@@ -216,8 +216,7 @@ export function updatePhase(state: GameState, input: InputFrame, dt: number): vo
       break;
     case 'wave_clear':
       if (!after(t, PHASE_TIME.waveClear)) break;
-      if (currentWaveInfo(state).isBoss) {
-        openDraft(state);
+      if (currentWaveInfo(state).isBoss && openDraft(state)) {
         setPhase(state, 'perk_draft');
       } else {
         advanceAfterWave(state);

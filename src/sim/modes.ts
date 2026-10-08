@@ -1,5 +1,5 @@
 // src/sim/modes.ts — OWNER: LEAD. Game modes: campaign, onslaught, boss rush, daily (HENPOCALYPSE §5).
-import type { GameState, MutatorId } from './types';
+import type { GameMode, GameState, MutatorId } from './types';
 import type { BossId } from './bosses.types';
 import type { WaveDef, WaveInfo } from './waves.types';
 import { BOSS_INFO } from '../shared/contracts';
@@ -29,7 +29,11 @@ export function wavesInChapter(state: GameState): number {
   return state.mode === 'boss_rush' ? 1 : WAVES_PER_CHAPTER;
 }
 
-let cacheKey = '';
+// Memo for generated waves. Compared field by field: this runs every tick and a string key would allocate each time.
+let cacheMode: GameMode | null = null;
+let cacheSeed = -1;
+let cacheChapter = -1;
+let cacheWave = -1;
 let cacheDef: WaveDef | null = null;
 
 export function rushBoss(chapter: number): BossId {
@@ -40,8 +44,9 @@ export function rushBoss(chapter: number): BossId {
 /** The wave definition for the state's mode, chapter and wave (memoized; generators are pure). */
 export function currentWaveDef(state: GameState): WaveDef {
   if (state.mode === 'campaign' || state.mode === 'daily') return campaignWaveDef(state.chapter, state.wave);
-  const key = state.mode + ':' + state.seed + ':' + state.chapter + ':' + state.wave;
-  if (key === cacheKey && cacheDef) return cacheDef;
+  if (cacheDef && cacheMode === state.mode && cacheSeed === state.seed && cacheChapter === state.chapter && cacheWave === state.wave) {
+    return cacheDef;
+  }
   let def: WaveDef;
   if (state.mode === 'boss_rush') {
     const boss = rushBoss(state.chapter);
@@ -49,7 +54,10 @@ export function currentWaveDef(state: GameState): WaveDef {
   } else {
     def = generateOnslaughtWave(state.seed, state.chapter, state.wave);
   }
-  cacheKey = key;
+  cacheMode = state.mode;
+  cacheSeed = state.seed;
+  cacheChapter = state.chapter;
+  cacheWave = state.wave;
   cacheDef = def;
   return def;
 }
