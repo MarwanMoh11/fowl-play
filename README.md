@@ -11,16 +11,22 @@ npm run check    # typecheck + tests + production build
 npm run build    # static build in dist/
 ```
 
+## Deploy (GitHub Pages)
+
+`.github/workflows/deploy.yml` runs `npm run check` and publishes `dist/` on every push to `main`. In the repository settings, set **Pages → Source** to **GitHub Actions**. Asset paths are relative (`base: './'`), so the game works under `https://<user>.github.io/<repo>/`. The page ships a web app manifest and icons, so phones can install it to the home screen; `scripts/make-icons.mjs` regenerates the PNG icons.
+
 ## Controls
 
-| Action | Mouse | Keyboard |
-|---|---|---|
-| Move | ship follows pointer | Arrows / WASD |
-| Fire (hold) | left button | Space / Z / J |
-| Missile | right button | X / K |
-| Overdrive (fury full) | middle button | C / L / Shift |
-| Pause | — | Esc / P |
-| Confirm / skip tally | left click | Enter / Space |
+| Action | Mouse | Keyboard | Touch |
+|---|---|---|---|
+| Move | ship follows pointer | Arrows / WASD | drag anywhere (relative, the finger never covers the ship) |
+| Fire (hold) | left button | Space / Z / J | automatic while a finger is down |
+| Missile | right button | X / K | MISSILE button |
+| Overdrive (fury full) | middle button | C / L / Shift | OVERDRIVE button |
+| Pause | — | Esc / P | PAUSE button |
+| Confirm / skip tally | left click | Enter / Space | tap |
+
+On phones the game is played in landscape (portrait shows a rotate prompt), menus switch to a larger touch layout, and rendering quality adapts to the measured frame rate.
 
 ## Debug
 

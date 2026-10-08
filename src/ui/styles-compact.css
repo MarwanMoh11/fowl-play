@@ -23,10 +23,12 @@
 .fp-compact .fp-subheading { font-size: calc(var(--fp-k) * 17px); margin-bottom: calc(var(--fp-k) * 6px); }
 .fp-compact .fp-corn-balance { font-size: calc(var(--fp-k) * 16px); margin-bottom: calc(var(--fp-k) * 6px); }
 .fp-compact .fp-row {
-  position: sticky; bottom: 0; z-index: 2; flex-wrap: wrap; gap: calc(var(--fp-k) * 10px);
+  position: sticky; bottom: 0; z-index: 2; width: 100%; flex-wrap: nowrap; gap: calc(var(--fp-k) * 10px);
   margin-top: calc(var(--fp-k) * 10px); padding-top: calc(var(--fp-k) * 8px);
   background: linear-gradient(rgba(16, 10, 40, 0), rgba(16, 10, 40, 0.96) 30%);
 }
+/* One row of actions: the buttons share the width instead of wrapping into a tall stack over the content. */
+.fp-compact .fp-row > .fp-btn { flex: 0 1 calc(var(--fp-k) * 300px); width: auto; min-width: 0; }
 .fp-compact .fp-list { gap: calc(var(--fp-k) * 6px); }
 .fp-compact .fp-menu { margin-top: calc(var(--fp-k) * 8px); gap: calc(var(--fp-k) * 8px); }
 .fp-compact .fp-credit-line { font-size: calc(var(--fp-k) * 15px); margin: calc(var(--fp-k) * 6px) 0; }
@@ -43,7 +45,7 @@
 .fp-compact .fp-title-menu .fp-btn { width: 100%; height: calc(var(--fp-k) * 44px); font-size: calc(var(--fp-k) * 16px); }
 .fp-compact .fp-loadout-col .fp-btn { width: 100%; }
 /* BACK stays reachable on the long settings list. */
-.fp-compact .fp-list > .fp-btn:last-child { position: sticky; bottom: 0; z-index: 2; }
+.fp-compact .fp-list > .fp-btn:last-child { position: sticky; bottom: 0; z-index: 2; background: rgb(16, 10, 40); }
 .fp-compact .fp-tab { font-size: calc(var(--fp-k) * 15px); }
 .fp-compact .fp-sel-label { font-size: calc(var(--fp-k) * 15px); }
 .fp-compact .fp-selector .fp-arrow { font-size: calc(var(--fp-k) * 20px); padding: calc(var(--fp-k) * 10px); }

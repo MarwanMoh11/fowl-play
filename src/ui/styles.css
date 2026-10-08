@@ -1,6 +1,5 @@
 /* src/ui/styles.css — OWNER: A4. DOM menus laid out in a fixed 1280x720 logical box (§8.7). */
 @import './styles-meta.css';
-@import './styles-compact.css';
 #ui {
   font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
   font-weight: 700;
