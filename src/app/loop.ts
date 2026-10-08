@@ -1,20 +1,24 @@
 // src/app/loop.ts — OWNER: A1. Fixed 60 Hz simulation, render every animation frame (§5.2).
 import { step } from '../sim/game';
 import { DT } from '../sim/tuning/core';
+import { qualityTierOf, isCoarsePointer } from '../render/quality';
 import { drawHud } from '../ui/hud';
 import type { App } from './app';
 
 const MAX_STEPS = 5;
+/** Frame intervals are clamped to this before they feed the accumulator, so a stall is dropped rather than replayed. */
 const MAX_FRAME_TIME = 0.25;
 
 export function startLoop(app: App): void {
   let acc = 0;
   let last = performance.now();
+  const coarse = isCoarsePointer();
 
   function frame(now: number): void {
-    const elapsed = Math.min(Math.max(0, now - last) / 1000, MAX_FRAME_TIME);
+    const gap = Math.max(0, now - last) / 1000;
+    const elapsed = Math.min(gap, MAX_FRAME_TIME);
     last = now;
-    app.fps.tick(elapsed);
+    app.fps.tick(gap);
     if (app.params.gallery) {
       app.renderer.renderGallery(app.view);
       requestAnimationFrame(frame);
@@ -39,7 +43,9 @@ export function startLoop(app: App): void {
     const frameDt = app.screen === 'paused' ? 0 : elapsed;
     app.renderer.render(app.state, app.view, app.settings, frameDt);
     if (app.state && app.screen !== 'title') {
-      drawHud(app.renderer.ctx, app.state, app.renderer.sprites, app.settings, app.fps.value);
+      drawHud(app.renderer.ctx, app.state, app.renderer.sprites, app.settings, app.fps.value, {
+        cssScale: app.view.cssScale, coarse, tier: qualityTierOf(app.renderer.ctx),
+      });
     }
     app.audio.update(app.screen, app.state, elapsed);
     requestAnimationFrame(frame);

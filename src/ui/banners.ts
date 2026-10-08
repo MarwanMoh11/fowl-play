@@ -35,6 +35,18 @@ export function bossTitleColor(elapsed: number, reduceFlashes: boolean): string 
   return Math.floor(elapsed * BOSS_FLASH_HZ * 2) % 2 === 0 ? ALERT_RED : '#FFFFFF';
 }
 
+let bigTitleFill: CanvasGradient | null = null;
+
+/** Gold-to-orange fill for the 'big' banner title. Coordinates are banner-local, so one gradient serves every frame. */
+function bigTitleGradient(ctx: CanvasRenderingContext2D): CanvasGradient {
+  if (!bigTitleFill) {
+    bigTitleFill = ctx.createLinearGradient(0, -36, 0, 36);
+    bigTitleFill.addColorStop(0, GOLD);
+    bigTitleFill.addColorStop(1, ORANGE);
+  }
+  return bigTitleFill;
+}
+
 function drawBossBand(ctx: CanvasRenderingContext2D): void {
   const x = -WORLD_W / 2;
   const y = -BOSS_BAND_H / 2;
@@ -73,10 +85,7 @@ function drawBannerBody(ctx: CanvasRenderingContext2D, b: Banner, settings: Sett
       if (b.subtitle !== '') drawText(ctx, b.subtitle, 0, 36, 20, { align: center, maxWidth });
       break;
     case 'big': {
-      const g = ctx.createLinearGradient(0, -36, 0, 36);
-      g.addColorStop(0, GOLD);
-      g.addColorStop(1, ORANGE);
-      drawText(ctx, b.title, 0, 0, 72, { align: center, fill: g, strokeWidth: 5, maxWidth });
+      drawText(ctx, b.title, 0, 0, 72, { align: center, fill: bigTitleGradient(ctx), strokeWidth: 5, maxWidth });
       if (b.subtitle !== '') drawText(ctx, b.subtitle, 0, 56, 24, { align: center, maxWidth });
       break;
     }

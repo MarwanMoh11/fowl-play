@@ -221,12 +221,15 @@ export function createEffects(): Effects {
       b.delay -= dt;
       if (b.delay <= 0) { b.active = false; explosion(b.x, b.y, b.big); }
     }
-    if (steamTimer > 0 && ship) {
+    // The timer runs down even with the ship dead, so steam from a death does not resume after respawn.
+    if (steamTimer > 0) {
       steamTimer -= dt;
-      steamAcc += dt;
-      while (steamAcc >= STEAM_INTERVAL) {
-        steamAcc -= STEAM_INTERVAL;
-        spawnPuff(pool, ship.x + (fxRand() - 0.5) * 12, ship.y - STEAM_NOSE_OFFSET, 0.3, 0.9, 0.5, 0.5, -70);
+      if (ship) {
+        steamAcc += dt;
+        while (steamAcc >= STEAM_INTERVAL) {
+          steamAcc -= STEAM_INTERVAL;
+          spawnPuff(pool, ship.x + (fxRand() - 0.5) * 12, ship.y - STEAM_NOSE_OFFSET, 0.3, 0.9, 0.5, 0.5, -70);
+        }
       }
     }
   }

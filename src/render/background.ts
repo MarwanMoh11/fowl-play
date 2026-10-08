@@ -122,8 +122,8 @@ export interface Background {
   /** Switch to a chapter's look. instant = no crossfade (new game, debug start). */
   setChapter(chapter: number, instant: boolean): void;
   update(dt: number, warpMult: number): void;
-  /** reduceFlashes dims the lightning strikes of chapter 10. */
-  draw(ctx: CanvasRenderingContext2D, warpMult: number, reduceFlashes?: boolean): void;
+  /** reduceFlashes dims the lightning strikes of chapter 10. detail = false (low quality tier) skips the decor layers. */
+  draw(ctx: CanvasRenderingContext2D, warpMult: number, reduceFlashes?: boolean, detail?: boolean): void;
 }
 
 export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Background {
@@ -171,16 +171,21 @@ export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Ba
     ctx.globalAlpha = 1;
   }
 
+  /** One path and one fill per colour group: a layer of 160 stars costs two fills, not 160 fillRect calls. */
   function drawStars(ctx: CanvasRenderingContext2D, from: number, to: number, mult: number): void {
     const streak = mult > WARP_STREAK_MIN_MULT;
     for (let li = from; li < to; li++) {
       const l = stars[li];
       const len = streak ? l.speed * mult * WARP_STREAK_FACTOR : 0;
       ctx.globalAlpha = l.alpha;
+      ctx.beginPath();
+      for (let i = 0; i < l.tintStart; i++) ctx.rect(l.x[i], l.y[i] - len, l.size, l.size + len);
       ctx.fillStyle = '#FFFFFF';
-      for (let i = 0; i < l.tintStart; i++) ctx.fillRect(l.x[i], l.y[i] - len, l.size, l.size + len);
+      ctx.fill();
+      ctx.beginPath();
+      for (let i = l.tintStart; i < l.count; i++) ctx.rect(l.x[i], l.y[i] - len, l.size, l.size + len);
       ctx.fillStyle = tint;
-      for (let i = l.tintStart; i < l.count; i++) ctx.fillRect(l.x[i], l.y[i] - len, l.size, l.size + len);
+      ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
@@ -206,7 +211,7 @@ export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Ba
         mix();
       }
     },
-    draw(ctx: CanvasRenderingContext2D, warpMult: number, reduceFlashes = false): void {
+    draw(ctx: CanvasRenderingContext2D, warpMult: number, reduceFlashes = false, detail = true): void {
       const key = top + bottom;
       if (!gradient || key !== gradientKey) {
         gradient = ctx.createLinearGradient(0, 0, 0, WORLD_H);
@@ -217,8 +222,10 @@ export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Ba
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, WORLD_W, WORLD_H);
       drawStars(ctx, 0, FAR_LAYERS_BEFORE_DECOR, warpMult);
-      if (prev) drawDecor(ctx, prev, 1 - fade);
-      drawDecor(ctx, cur, prev ? fade : 1);
+      if (detail) {
+        if (prev) drawDecor(ctx, prev, 1 - fade);
+        drawDecor(ctx, cur, prev ? fade : 1);
+      }
       if (cur.storm) drawStormStrike(ctx, clock, reduceFlashes);
       drawStars(ctx, FAR_LAYERS_BEFORE_DECOR, stars.length, warpMult);
     },

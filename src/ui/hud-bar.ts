@@ -101,7 +101,8 @@ function drawHeat(ctx: CanvasRenderingContext2D, state: GameState, settings: Set
 function drawWeapon(ctx: CanvasRenderingContext2D, sprites: SpriteApi, state: GameState): void {
   const w = state.player.weapon;
   sprites.draw(ctx, `icon_weapon_${w}`, WEAPON_X + 14, BAR_CENTER_Y);
-  drawText(ctx, WEAPON_INFO[w].name, WEAPON_X + 36, BAR_CENTER_Y, 16);
+  // maxWidth condenses the name when enlarged text would run off the right edge (no effect at the designed size).
+  drawText(ctx, WEAPON_INFO[w].name, WEAPON_X + 36, BAR_CENTER_Y, 16, { maxWidth: WORLD_W - (WEAPON_X + 36) - 6 });
 }
 
 export function drawBottomBar(
