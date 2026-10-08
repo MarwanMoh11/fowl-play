@@ -1,5 +1,6 @@
 // src/sim/tuning/weapons.ts — OWNER: H1 (was A2). Player, weapon, heat, missile and projectile numbers (§7.3–§7.7).
 import type { ProjectileKind, WeaponId } from '../types';
+import { FLAK, FLAME, HOMING, PRISM, RAIL, SICKLE } from './weapons2';
 
 /** Ship (§7.3). */
 export const PLAYER = {
@@ -72,15 +73,18 @@ export const ARC = {
   levels: lv<ArcLevel>(11, (i) => ({ targets: ARC_TARGETS[i], damage: ARC_DAMAGE[i] })),
 } as const;
 
-// Phase-0 placeholders for the six HENPOCALYPSE weapons (H1 replaces with real tables).
+/** Volley rate (per s) and heat per volley for every weapon. The six HENPOCALYPSE weapons live in tuning/weapons2.ts. */
 export const WEAPON_RATE: Record<WeaponId, number> = {
   pulse: PULSE.rate, neutron: NEUTRON.rate, laser: LASER.rate, arc: ARC.rate,
-  flak: PULSE.rate, flame: PULSE.rate, sickle: PULSE.rate, homing: PULSE.rate, rail: PULSE.rate, prism: PULSE.rate,
+  flak: FLAK.rate, flame: FLAME.rate, sickle: SICKLE.rate, homing: HOMING.rate, rail: RAIL.rate, prism: PRISM.rate,
 };
 export const WEAPON_HEAT: Record<WeaponId, number> = {
   pulse: PULSE.heat, neutron: NEUTRON.heat, laser: LASER.heat, arc: ARC.heat,
-  flak: PULSE.heat, flame: PULSE.heat, sickle: PULSE.heat, homing: PULSE.heat, rail: PULSE.heat, prism: PULSE.heat,
+  flak: FLAK.heat, flame: FLAME.heat, sickle: SICKLE.heat, homing: HOMING.heat, rail: RAIL.heat, prism: PRISM.heat,
 };
+
+/** Cluster egg (enemy): bursts into `shards` fragments when its fuse runs out (spec-silent fuse, see decisions). */
+export const CLUSTER = { fuse: 1.5, shards: 6, shardSpeed: 200 } as const;
 
 /** Missile (§7.5). */
 export const MISSILE = {

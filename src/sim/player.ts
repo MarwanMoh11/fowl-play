@@ -68,8 +68,8 @@ function respawn(state: GameState): void {
   emit(state, { type: 'player_respawned', x: p.pos.x, y: p.pos.y });
 }
 
-/** Moves the ship for one tick and returns its horizontal velocity (px/s). */
-function moveShip(p: Player, input: InputFrame, dt: number): number {
+/** Moves the ship for one tick and returns its horizontal velocity (px/s). speedMul = mods.moveSpeedMul. */
+function moveShip(p: Player, input: InputFrame, dt: number, speedMul: number): number {
   const startX = p.pos.x;
   if (input.pointer) {
     const tx = clamp(input.pointer.x, SHIP_MIN_X, SHIP_MAX_X);
@@ -77,7 +77,7 @@ function moveShip(p: Player, input: InputFrame, dt: number): number {
     const dx = tx - p.pos.x;
     const dy = ty - p.pos.y;
     const d = Math.sqrt(dx * dx + dy * dy);
-    const step = Math.min(d, PLAYER.pointerMaxSpeed * dt);
+    const step = Math.min(d, PLAYER.pointerMaxSpeed * speedMul * dt);
     if (d > 0) {
       p.pos.x += (dx / d) * step;
       p.pos.y += (dy / d) * step;
@@ -90,8 +90,8 @@ function moveShip(p: Player, input: InputFrame, dt: number): number {
       mx /= l;
       my /= l;
     }
-    p.pos.x += mx * PLAYER.keyboardSpeed * dt;
-    p.pos.y += my * PLAYER.keyboardSpeed * dt;
+    p.pos.x += mx * PLAYER.keyboardSpeed * speedMul * dt;
+    p.pos.y += my * PLAYER.keyboardSpeed * speedMul * dt;
   }
   p.pos.x = clamp(p.pos.x, SHIP_MIN_X, SHIP_MAX_X);
   p.pos.y = clamp(p.pos.y, SHIP_MIN_Y, SHIP_MAX_Y);
@@ -110,7 +110,7 @@ export function updatePlayer(state: GameState, input: InputFrame, dt: number): v
     return;
   }
   if (p.invulnTimer > 0) p.invulnTimer = Math.max(0, p.invulnTimer - dt);
-  const vx = moveShip(p, input, dt);
+  const vx = moveShip(p, input, dt, state.mods.moveSpeedMul);
   const target = clamp(vx / PLAYER.bankDivisor, -1, 1);
   p.bank = approach(p.bank, target, PLAYER.bankRate * dt);
 }

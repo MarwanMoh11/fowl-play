@@ -25,7 +25,7 @@ export function updateMissile(state: GameState, input: InputFrame, dt: number): 
   });
   if (!shot) return;
   if (!free) p.missiles -= 1;
-  p.missileCooldown = MISSILE.cooldown;
+  p.missileCooldown = MISSILE.cooldown * state.mods.missileCooldownMul;
   emit(state, { type: 'missile_launched', x, y, tx: t.x, ty: t.y });
 }
 
@@ -34,11 +34,12 @@ export function detonateMissile(state: GameState, x: number, y: number): void {
   const [minY, maxY] = MISSILE.boundsY;
   const list = state.enemies;
   const n = list.length;
+  const bossDamage = MISSILE.bossDamage * state.mods.missileDamageMul * state.mods.bossDamageMul;
   for (let i = 0; i < n; i++) {
     const e = list[i];
     if (!e.alive) continue;
     if (e.isBoss) {
-      if (!e.invulnerable) damageEnemy(state, e, MISSILE.bossDamage, 'missile');
+      if (!e.invulnerable) damageEnemy(state, e, bossDamage, 'missile');
     } else if (e.pos.x >= minX && e.pos.x <= maxX && e.pos.y >= minY && e.pos.y <= maxY) {
       damageEnemy(state, e, MISSILE.killDamage, 'missile');
     }
