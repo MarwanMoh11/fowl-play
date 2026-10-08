@@ -8,6 +8,7 @@ import {
   spawnPopup, spawnPuff, spawnRing, spawnSparkles, spawnSparks, spawnSplat, spawnYolk, updateParticles,
   type ParticlePool,
 } from './particles';
+import { createRails, handleHenpoEvent, resetRails, updateRails, type FxSinks, type RailBeam } from './fx-henpo';
 import { createFlash, createShake, type ScreenFlash, type Shake } from './shake';
 
 const TAU = Math.PI * 2;
@@ -24,7 +25,8 @@ export const BOSS_FEATHERS = 200;
 export const STEAM_TIME = 0.5;
 export const STEAM_INTERVAL = 0.04;
 export const STEAM_NOSE_OFFSET = 28;
-const FEATHER_COLOR = { white: '#FFF8EE', red: '#FF6B5B', chick: '#FFD93B', rooster: '#D9582E' } as const;
+const FEATHER_COLOR = { white: '#FFF8EE', red: '#FF6B5B', chick: '#FFD93B', rooster: '#D9582E', gold: '#FFD93B', ghost: '#CDB4FF' } as const;
+const SHELL_COLOR = '#FFF3D6';
 const SHIP_DEBRIS = ['#F2F6FF', '#2E86FF', '#9AA7B8', '#FF3B3B'] as const;
 const PICKUP_COLOR: Record<PickupKind, string> = {
   drumstick: '#FFB35C', roast: '#FFB35C', power_core: '#39FF88',
@@ -46,19 +48,23 @@ export interface Effects {
   readonly flash: ScreenFlash;
   readonly arcs: ArcBolt[];
   readonly ghosts: BossGhost[];
+  readonly rails: RailBeam[];
   handleEvents(events: readonly GameEvent[], ship: Vec2 | null): void;
   /** Advances particles, timers, pending explosions. ship = player position for emitters (null if unknown). */
   update(dt: number, ship: Vec2 | null): void;
   reset(): void;
 }
 
-const isAsteroid = (k: EnemyKind): boolean => k.startsWith('asteroid');
-const isMachine = (k: EnemyKind): boolean => k === 'boss_carrier' || k === 'boss_dreadnought';
+const MACHINE_KINDS: ReadonlySet<EnemyKind> = new Set<EnemyKind>(['boss_carrier', 'boss_dreadnought', 'chicken_jet', 'chicken_turret', 'chicken_mech', 'space_mine']);
+const isAsteroid = (k: EnemyKind): boolean => k.startsWith('asteroid') || k === 'comet';
+const isMachine = (k: EnemyKind): boolean => MACHINE_KINDS.has(k);
 
 function featherColor(k: EnemyKind): string {
   if (k === 'chicken_red') return FEATHER_COLOR.red;
   if (k === 'chick') return FEATHER_COLOR.chick;
   if (k === 'boss_rooster') return FEATHER_COLOR.rooster;
+  if (k === 'chicken_gold') return FEATHER_COLOR.gold;
+  if (k === 'chicken_ghost') return FEATHER_COLOR.ghost;
   return FEATHER_COLOR.white;
 }
 
@@ -72,6 +78,8 @@ export function createEffects(): Effects {
   for (let i = 0; i < MAX_GHOSTS; i++) ghosts.push({ active: false, kind: 'boss_hen', x: 0, y: 0, t: 0, frame: 0 });
   const bursts: Burst[] = [];
   for (let i = 0; i < MAX_BURSTS; i++) bursts.push({ active: false, delay: 0, x: 0, y: 0, big: false });
+  const rails = createRails();
+  const sinks: FxSinks = { pool, shake, flash, ship: null, rails };
   let arcCursor = 0;
   let steamTimer = 0;
   let steamAcc = 0;
@@ -91,6 +99,9 @@ export function createEffects(): Effects {
       spawnSparks(pool, x, y, 4);
     } else if (isMachine(kind)) {
       spawnSparks(pool, x, y, 4);
+    } else if (kind === 'egg_pod') {
+      spawnDebris(pool, x, y, 2, SHELL_COLOR);
+      spawnYolk(pool, x, y, 2);
     } else if (kind.startsWith('boss_')) {
       spawnFeathers(pool, x, y, 1, featherColor(kind));
       spawnSparks(pool, x, y, 3);
@@ -106,6 +117,12 @@ export function createEffects(): Effects {
       for (let i = 0; i < 5; i++) spawnDebris(pool, x, y, 2, i % 2 ? COLORS.rock : COLORS.rockLight);
       spawnPuff(pool, x, y, 0.5, 1.6, 0.4, 0.5);
       shake.add(0.03);
+      return;
+    }
+    if (kind === 'egg_pod') {
+      for (let i = 0; i < 2; i++) spawnDebris(pool, x, y, 4, SHELL_COLOR);
+      spawnYolk(pool, x, y, 6);
+      shake.add(0.05);
       return;
     }
     spawnFeathers(pool, x, y, 12, featherColor(kind));
@@ -183,7 +200,7 @@ export function createEffects(): Effects {
         break;
       case 'boss_killed': bossKilled(e.kind, e.x, e.y, e.radius); break;
       case 'overheat': steamTimer = STEAM_TIME; steamAcc = 0; break;
-      default: break;
+      default: handleHenpoEvent(e, sinks); break;
     }
   }
 
@@ -193,6 +210,7 @@ export function createEffects(): Effects {
     shake.update(dt);
     flash.update(dt);
     for (const a of arcs) if (a.ttl > 0) a.ttl -= dt;
+    updateRails(rails, dt);
     for (const g of ghosts) {
       if (!g.active) continue;
       g.t += dt;
@@ -220,13 +238,15 @@ export function createEffects(): Effects {
     for (const a of arcs) a.ttl = 0;
     for (const g of ghosts) g.active = false;
     for (const b of bursts) b.active = false;
+    resetRails(rails);
     steamTimer = 0;
     steamAcc = 0;
   }
 
   return {
-    pool, shake, flash, arcs, ghosts,
+    pool, shake, flash, arcs, ghosts, rails,
     handleEvents(events: readonly GameEvent[], ship: Vec2 | null): void {
+      sinks.ship = ship;
       for (let i = 0; i < events.length; i++) handle(events[i], ship);
     },
     update,

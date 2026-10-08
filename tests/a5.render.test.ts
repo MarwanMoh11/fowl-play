@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { advanceStars, CHAPTER_PALETTES, createStarfield, paletteFor, warpFactor } from '../src/render/background';
 import { layoutGallery } from '../src/render/gallery';
 import { enemyLook, createWorldRenderer, ENEMY_SPRITE, PICKUP_SPRITE } from '../src/render/renderer';
-import { CHAPTER_DECOR, decorFor, decorSize, drawNebula, drawPlanet } from '../src/render/decor';
+import { DECOR_CYCLE, decorFor, decorSize, drawNebula, drawPlanet } from '../src/render/decor';
+import { drawHenpoDecor } from '../src/render/decor-henpo';
 import { createGallery } from '../src/render/gallery';
 import { SPRITE_REGISTRY } from '../src/render/sprites/registry';
 import { DEFAULT_SETTINGS, SPRITE_KEYS, type DrawOpts, type SpriteApi, type SpriteKey, type View } from '../src/shared/contracts';
@@ -55,12 +56,12 @@ describe('a5 sprite mapping and frame selection', () => {
 });
 
 describe('a5 backgrounds', () => {
-  it('uses the chapter palettes and reuses them past chapter 5', () => {
-    expect(CHAPTER_PALETTES.length).toBe(5);
+  it('uses twelve chapter palettes and reuses them past chapter 12', () => {
+    expect(CHAPTER_PALETTES.length).toBe(12);
     expect(paletteFor(1)).toEqual(['#0B0B2B', '#2A1B5C']);
     expect(paletteFor(5)).toEqual(['#1A0505', '#4A0E0E']);
-    expect(paletteFor(6)).toEqual(paletteFor(1));
-    expect(paletteFor(13)).toEqual(paletteFor(3));
+    expect(paletteFor(6)).not.toEqual(paletteFor(1));
+    expect(paletteFor(13)).toEqual(paletteFor(1));
     for (let c = 1; c <= 6; c++) {
       const decor = decorFor(c);
       expect(decor.length).toBeGreaterThanOrEqual(1);
@@ -185,7 +186,7 @@ describe('a5 world renderer (mock canvas)', () => {
     expect(drawn).not.toContain('ship');
     drawn.length = 0;
     r.render(null, view, DEFAULT_SETTINGS, 1 / 60);
-    expect(drawn.filter((k) => k === 'enemy_chicken_basic').length).toBe(6);
+    expect(drawn.filter((k) => k.startsWith('enemy_')).length).toBe(6);
     expect(m.last('setTransform')).toEqual([view.scale, 0, 0, view.scale, 0, 0]);
   });
 
@@ -201,10 +202,12 @@ describe('a5 world renderer (mock canvas)', () => {
 
 describe('a5 decor and gallery drawing (mock canvas)', () => {
   it('draws every planet and nebula inside its canvas without invalid calls', () => {
-    for (const [i, list] of CHAPTER_DECOR.entries()) {
+    for (const [i, list] of DECOR_CYCLE.entries()) {
       for (const spec of list) {
         const m = mockCtx();
-        if (spec.type === 'planet') drawPlanet(m.ctx, spec); else drawNebula(m.ctx, spec);
+        if (spec.type === 'planet') drawPlanet(m.ctx, spec);
+        else if (spec.type === 'nebula') drawNebula(m.ctx, spec);
+        else drawHenpoDecor(m.ctx, spec);
         const { w, h } = decorSize(spec);
         const b = m.bounds();
         expect(m.violations, `chapter ${i + 1} ${spec.type}`).toEqual([]);

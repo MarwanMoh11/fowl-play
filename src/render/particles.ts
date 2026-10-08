@@ -2,12 +2,12 @@
 import type { SpriteApi, DrawOpts } from '../shared/contracts';
 import { FONT_FAMILY } from './sprites/palette';
 
-export const POOL_CAPACITY = 2000;
+export const POOL_CAPACITY = 3000;
 const TAU = Math.PI * 2;
 
 export const PK = {
   feather: 0, spark: 1, debris: 2, ring: 3, puff: 4, splat: 5,
-  sparkle: 6, muzzle: 7, text: 8, fireball: 9, yolk: 10,
+  sparkle: 6, muzzle: 7, text: 8, fireball: 9, yolk: 10, smoke: 11,
 } as const;
 export type ParticleKind = typeof PK[keyof typeof PK];
 
@@ -157,10 +157,22 @@ export function spawnMuzzle(pool: ParticlePool, x: number, y: number, color: str
   if (p) p.size = radius;
 }
 
-export function spawnPopup(pool: ParticlePool, x: number, y: number, text: string): void {
-  const p = alloc(pool, PK.text, x, y, POPUP.life, COLORS.white);
+/** Floating text. size scales POPUP.fontSize; the outline stays dark so text reads on any background. */
+export function spawnText(pool: ParticlePool, x: number, y: number, text: string, size: number, color: string, life: number = POPUP.life): void {
+  const p = alloc(pool, PK.text, x, y, life, color);
   if (!p) return;
-  p.text = text; p.vy = -POPUP.rise / POPUP.life;
+  p.text = text; p.size = size; p.vy = -POPUP.rise / life;
+}
+
+export function spawnPopup(pool: ParticlePool, x: number, y: number, text: string): void {
+  spawnText(pool, x, y, text, 1, COLORS.white);
+}
+
+/** Grey smoke puff (fx_smoke) that grows, rises slightly and fades. */
+export function spawnSmoke(pool: ParticlePool, x: number, y: number, s0: number, s1: number, life: number, alpha = 0.6, vy = -30): void {
+  const p = alloc(pool, PK.smoke, x, y, life, COLORS.white);
+  if (!p) return;
+  p.size = s0; p.size2 = s1; p.seed = alpha; p.vy = vy;
 }
 
 export function spawnSplat(pool: ParticlePool, x: number, y: number): void {
@@ -299,6 +311,13 @@ export function drawParticles(ctx: CanvasRenderingContext2D, pool: ParticlePool,
         sprites.draw(ctx, 'fx_puff', p.x, p.y, drawOpts);
         break;
       }
+      case PK.smoke: {
+        ctx.globalAlpha = 1;
+        drawOpts.scale = p.size + (p.size2 - p.size) * t;
+        drawOpts.alpha = p.seed * (1 - t);
+        sprites.draw(ctx, 'fx_smoke', p.x, p.y, drawOpts);
+        break;
+      }
       case PK.splat: {
         ctx.globalAlpha = 1;
         drawOpts.scale = 1;
@@ -308,14 +327,14 @@ export function drawParticles(ctx: CanvasRenderingContext2D, pool: ParticlePool,
       }
       case PK.text: {
         setAlpha(ctx, t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4);
-        ctx.font = `bold ${POPUP.fontSize}px ${FONT_FAMILY}`;
+        ctx.font = `bold ${POPUP.fontSize * p.size}px ${FONT_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.lineJoin = 'round';
         ctx.lineWidth = POPUP.outline;
         ctx.strokeStyle = COLORS.outline; stroke = COLORS.outline;
         ctx.strokeText(p.text, p.x, p.y);
-        ctx.fillStyle = COLORS.white; fill = COLORS.white;
+        if (fill !== p.color) { ctx.fillStyle = p.color; fill = p.color; }
         ctx.fillText(p.text, p.x, p.y);
         break;
       }

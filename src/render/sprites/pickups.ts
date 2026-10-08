@@ -4,7 +4,6 @@ import { drawMissile } from './projectiles';
 import { FONT_FAMILY, PAL } from './palette';
 import { WEAPON_INFO } from '../../shared/contracts';
 import type { WeaponId } from '../../sim/types';
-import { WEAPON_IDS } from '../../sim/types';
 import { def, type Ctx, type SpriteDef } from './types';
 
 export function drawDrumstick(ctx: Ctx): void {
@@ -46,7 +45,7 @@ function drawCore(ctx: Ctx, frame: number): void {
   for (const [x, y] of [[26, 19], [4, 11]]) circ(ctx, x, y, 1.8, PAL.white, 0);
 }
 
-function drawGift(ctx: Ctx, w: WeaponId): void {
+export function drawGift(ctx: Ctx, w: WeaponId): void {
   const info = WEAPON_INFO[w];
   glow(ctx, 17, 17, 21, info.color, 0.45);
   roundRect(ctx, 4, 15, 26, 17, 3, info.color);
@@ -86,7 +85,7 @@ function strokeGlyph(ctx: Ctx, pts: readonly number[], color: string, lw: number
   line(ctx, pts, color, lw);
 }
 
-function drawWeaponIcon(ctx: Ctx, w: WeaponId): void {
+export function drawWeaponIcon(ctx: Ctx, w: WeaponId): void {
   const c = WEAPON_INFO[w].color;
   if (w === 'pulse') {
     for (const x of [3.5, 12, 20.5]) line(ctx, [12, 21, x, 4], PAL.outline, 5);
@@ -104,10 +103,12 @@ function drawWeaponIcon(ctx: Ctx, w: WeaponId): void {
   }
 }
 
-const GIFTS: SpriteDef[] = WEAPON_IDS.map((w) =>
+/** The four classic weapons; the six HENPOCALYPSE weapons have their art in loot.ts. */
+const CLASSIC_WEAPONS: readonly WeaponId[] = ['pulse', 'neutron', 'laser', 'arc'];
+const GIFTS: SpriteDef[] = CLASSIC_WEAPONS.map((w) =>
   def({ key: `pickup_gift_${w}`, w: 34, h: 34, frames: 1, pad: 5, draw: (ctx) => drawGift(ctx, w) }),
 );
-const WEAPON_ICONS: SpriteDef[] = WEAPON_IDS.map((w) =>
+const WEAPON_ICONS: SpriteDef[] = CLASSIC_WEAPONS.map((w) =>
   def({ key: `icon_weapon_${w}`, w: 24, h: 24, frames: 1, draw: (ctx) => drawWeaponIcon(ctx, w) }),
 );
 

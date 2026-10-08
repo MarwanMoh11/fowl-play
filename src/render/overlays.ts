@@ -1,6 +1,7 @@
-// src/render/overlays.ts — OWNER: A5. Hazard drawing (§8.3 step 7), full-screen flash and debug hitboxes (step 13).
+// src/render/overlays.ts — OWNER: H5 (was A5). Hazard drawing (§8.3 step 7), full-screen flash and debug hitboxes (step 13).
 import type { GameState, Hazard } from '../sim/types';
 import { WORLD_H, WORLD_W } from '../sim/tuning/core';
+import { rgba } from './sprites/draw';
 
 const TAU = Math.PI * 2;
 export const TELEGRAPH_ALPHA_MIN = 0.3;
@@ -12,6 +13,23 @@ const NO_DASH: number[] = [];
 export const BEAM = { glowColor: '#FF3B3B', glowAlpha: 0.5, glowScale: 1.6, mainColor: '#FF6B6B', coreColor: '#FFFFFF', coreScale: 0.4 } as const;
 export const HITBOX_COLORS = { player: '#39FF88', enemy: '#FF3B3B', projectile: '#FFD60A', pickup: '#7FE7FF', hazard: '#FF8AF0' } as const;
 
+/** Beam colours: boss beams are red; environment beams are tinted by chapter (ch 7 solar flare, ch 10 storm). */
+export interface BeamTint { glow: string; main: string }
+export const BOSS_TINT: BeamTint = { glow: BEAM.glowColor, main: BEAM.mainColor };
+export const FLARE_TINT: BeamTint = { glow: '#FF8A1E', main: '#FFB347' };
+export const STORM_TINT: BeamTint = { glow: '#2E9BFF', main: '#7FE7FF' };
+export const FLARE_CHAPTER = 7;
+export const STORM_CHAPTER = 10;
+const CYCLE = 12;
+
+export function hazardTint(h: Hazard, chapter: number): BeamTint {
+  if (h.ownerId !== -1) return BOSS_TINT;
+  const c = ((Math.floor(chapter) - 1) % CYCLE + CYCLE) % CYCLE + 1;
+  if (c === FLARE_CHAPTER) return FLARE_TINT;
+  if (c === STORM_CHAPTER) return STORM_TINT;
+  return BOSS_TINT;
+}
+
 function strokeSegment(ctx: CanvasRenderingContext2D, h: Hazard, width: number): void {
   ctx.beginPath();
   ctx.moveTo(h.a.x, h.a.y);
@@ -20,29 +38,36 @@ function strokeSegment(ctx: CanvasRenderingContext2D, h: Hazard, width: number):
   ctx.stroke();
 }
 
-export function drawHazards(ctx: CanvasRenderingContext2D, hazards: readonly Hazard[], time: number): void {
+function drawTelegraph(ctx: CanvasRenderingContext2D, h: Hazard, pulse: number, tint: BeamTint): void {
+  ctx.lineCap = 'butt';
+  if (h.width >= TELEGRAPH_BAND_MIN_WIDTH) {
+    ctx.strokeStyle = rgba(tint.glow, Number((pulse * 0.5).toFixed(3)));
+    strokeSegment(ctx, h, h.width);
+  }
+  ctx.strokeStyle = rgba(tint.glow, Number(pulse.toFixed(3)));
+  ctx.setLineDash(TELEGRAPH_DASH);
+  strokeSegment(ctx, h, h.width >= TELEGRAPH_BAND_MIN_WIDTH ? 4 : Math.max(2, h.width));
+  ctx.setLineDash(NO_DASH);
+}
+
+function drawBeam(ctx: CanvasRenderingContext2D, h: Hazard, tint: BeamTint): void {
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = rgba(tint.glow, BEAM.glowAlpha);
+  strokeSegment(ctx, h, h.width * BEAM.glowScale);
+  ctx.strokeStyle = tint.main;
+  strokeSegment(ctx, h, h.width);
+  ctx.strokeStyle = BEAM.coreColor;
+  strokeSegment(ctx, h, h.width * BEAM.coreScale);
+}
+
+/** Telegraphs and beams. Gravity wells are drawn separately (gravity.ts). */
+export function drawHazards(ctx: CanvasRenderingContext2D, hazards: readonly Hazard[], time: number, chapter = 1): void {
   const pulse = TELEGRAPH_ALPHA_MIN + (TELEGRAPH_ALPHA_MAX - TELEGRAPH_ALPHA_MIN) * (0.5 + 0.5 * Math.sin(time * TELEGRAPH_HZ * TAU));
   for (const h of hazards) {
-    if (!h.alive) continue;
-    if (h.kind === 'telegraph') {
-      ctx.lineCap = 'butt';
-      if (h.width >= TELEGRAPH_BAND_MIN_WIDTH) {
-        ctx.strokeStyle = `rgba(255,59,59,${(pulse * 0.5).toFixed(3)})`;
-        strokeSegment(ctx, h, h.width);
-      }
-      ctx.strokeStyle = `rgba(255,59,59,${pulse.toFixed(3)})`;
-      ctx.setLineDash(TELEGRAPH_DASH);
-      strokeSegment(ctx, h, h.width >= TELEGRAPH_BAND_MIN_WIDTH ? 4 : Math.max(2, h.width));
-      ctx.setLineDash(NO_DASH);
-    } else {
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = `rgba(255,59,59,${BEAM.glowAlpha})`;
-      strokeSegment(ctx, h, h.width * BEAM.glowScale);
-      ctx.strokeStyle = BEAM.mainColor;
-      strokeSegment(ctx, h, h.width);
-      ctx.strokeStyle = BEAM.coreColor;
-      strokeSegment(ctx, h, h.width * BEAM.coreScale);
-    }
+    if (!h.alive || h.kind === 'gravity') continue;
+    const tint = hazardTint(h, chapter);
+    if (h.kind === 'telegraph') drawTelegraph(ctx, h, pulse, tint);
+    else drawBeam(ctx, h, tint);
   }
   ctx.lineCap = 'butt';
 }

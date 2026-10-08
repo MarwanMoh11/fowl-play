@@ -1,11 +1,20 @@
-// src/render/background.ts — OWNER: A5. Chapter gradient, 3-layer starfield, decor, palette crossfade and warp streaks (§8.4).
+// src/render/background.ts — OWNER: H5 (was A5). Chapter gradient, 3-layer starfield, decor, palette crossfade and warp streaks (§8.4).
+import { HENPOCALYPSE_CHAPTERS } from '../sim/chapters2';
 import { PHASE_TIME, WORLD_H, WORLD_W } from '../sim/tuning/core';
+import { drawStormStrike } from './background-storm';
 import { DECOR_DRIFT_PX_S, decorFor, decorSize, drawNebula, drawPlanet, PLANET_RENDER_SCALE, type DecorSpec } from './decor';
+import { drawHenpoDecor } from './decor-henpo';
 import { lighten, mixColor, seededRandom } from './sprites/draw';
 
-export const CHAPTER_PALETTES: readonly (readonly [string, string])[] = [
+const CLASSIC_PALETTES: readonly (readonly [string, string])[] = [
   ['#0B0B2B', '#2A1B5C'], ['#10202B', '#3B2A1A'], ['#2B0F2E', '#7A2E1E'], ['#061A33', '#1E4E79'], ['#1A0505', '#4A0E0E'],
 ];
+/** Chapters 1–12: the five classic palettes, then chapters 6–12 from the HENPOCALYPSE chapter table. */
+export const CHAPTER_PALETTES: readonly (readonly [string, string])[] = [
+  ...CLASSIC_PALETTES, ...HENPOCALYPSE_CHAPTERS.map((c) => c.palette),
+];
+/** Palette index of chapter 10 (Thunderhead Roost): lightning strikes. */
+export const STORM_PALETTE_INDEX = 9;
 export const STAR_LAYERS = [
   { count: 160, size: 1, speed: 15, alpha: 0.6 },
   { count: 90, size: 1.5, speed: 40, alpha: 0.8 },
@@ -69,8 +78,8 @@ export function advanceStars(layers: readonly StarLayer[], dt: number, mult: num
   }
 }
 
-interface DecorItem { spec: DecorSpec; canvas: HTMLCanvasElement | null; x: number; y: number; w: number; h: number }
-interface Look { chapter: number; top: string; bottom: string; tint: string; decor: DecorItem[] }
+interface DecorItem { spec: DecorSpec; canvas: HTMLCanvasElement | null; x: number; y: number; w: number; h: number; spin: number; angle: number }
+interface Look { chapter: number; top: string; bottom: string; tint: string; storm: boolean; decor: DecorItem[] }
 
 export type CanvasFactory = (w: number, h: number) => HTMLCanvasElement | null;
 const defaultFactory: CanvasFactory = (w, h) => {
@@ -79,6 +88,12 @@ const defaultFactory: CanvasFactory = (w, h) => {
   c.width = w; c.height = h;
   return c;
 };
+
+function drawSpec(ctx: CanvasRenderingContext2D, spec: DecorSpec): void {
+  if (spec.type === 'planet') drawPlanet(ctx, spec);
+  else if (spec.type === 'nebula') drawNebula(ctx, spec);
+  else drawHenpoDecor(ctx, spec);
+}
 
 function buildLook(chapter: number, makeCanvas: CanvasFactory): Look {
   const [top, bottom] = paletteFor(chapter);
@@ -89,11 +104,14 @@ function buildLook(chapter: number, makeCanvas: CanvasFactory): Look {
     const ctx = canvas?.getContext('2d');
     if (canvas && ctx) {
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      if (spec.type === 'planet') drawPlanet(ctx, spec); else drawNebula(ctx, spec);
+      drawSpec(ctx, spec);
     }
-    return { spec, canvas, x: spec.x, y: spec.y, w: size.w, h: size.h };
+    return { spec, canvas, x: spec.x, y: spec.y, w: size.w, h: size.h, spin: spec.type === 'gear' ? spec.spin : 0, angle: 0 };
   });
-  return { chapter, top, bottom, tint: lighten(top, STAR_TINT_BRIGHTEN), decor };
+  return {
+    chapter, top, bottom, tint: lighten(top, STAR_TINT_BRIGHTEN),
+    storm: paletteIndex(chapter) === STORM_PALETTE_INDEX, decor,
+  };
 }
 
 export interface Background {
@@ -104,7 +122,8 @@ export interface Background {
   /** Switch to a chapter's look. instant = no crossfade (new game, debug start). */
   setChapter(chapter: number, instant: boolean): void;
   update(dt: number, warpMult: number): void;
-  draw(ctx: CanvasRenderingContext2D, warpMult: number): void;
+  /** reduceFlashes dims the lightning strikes of chapter 10. */
+  draw(ctx: CanvasRenderingContext2D, warpMult: number, reduceFlashes?: boolean): void;
 }
 
 export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Background {
@@ -112,6 +131,7 @@ export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Ba
   let cur: Look = buildLook(1, makeCanvas);
   let prev: Look | null = null;
   let fade = 1;
+  let clock = 0;
   let top = cur.top;
   let bottom = cur.bottom;
   let tint = cur.tint;
@@ -125,9 +145,10 @@ export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Ba
     tint = mixColor(prev.tint, cur.tint, fade);
   }
 
-  function drift(look: Look, dt: number): void {
+  function animate(look: Look, dt: number): void {
     for (const d of look.decor) {
       d.y += DECOR_DRIFT_PX_S * dt;
+      d.angle += d.spin * dt;
       if (d.y - d.h / 2 > WORLD_H + 40) d.y = -d.h / 2 - 40;
     }
   }
@@ -135,7 +156,18 @@ export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Ba
   function drawDecor(ctx: CanvasRenderingContext2D, look: Look, alpha: number): void {
     if (alpha <= 0) return;
     ctx.globalAlpha = alpha;
-    for (const d of look.decor) if (d.canvas) ctx.drawImage(d.canvas, d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
+    for (const d of look.decor) {
+      if (!d.canvas) continue;
+      if (d.spin === 0) {
+        ctx.drawImage(d.canvas, d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
+      } else {
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(d.angle);
+        ctx.drawImage(d.canvas, -d.w / 2, -d.h / 2, d.w, d.h);
+        ctx.restore();
+      }
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -164,16 +196,17 @@ export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Ba
       mix();
     },
     update(dt: number, warpMult: number): void {
+      clock += dt;
       advanceStars(stars, dt, warpMult);
-      drift(cur, dt);
+      animate(cur, dt);
       if (prev) {
-        drift(prev, dt);
+        animate(prev, dt);
         fade += dt / CROSSFADE_TIME;
         if (fade >= 1) { fade = 1; prev = null; }
         mix();
       }
     },
-    draw(ctx: CanvasRenderingContext2D, warpMult: number): void {
+    draw(ctx: CanvasRenderingContext2D, warpMult: number, reduceFlashes = false): void {
       const key = top + bottom;
       if (!gradient || key !== gradientKey) {
         gradient = ctx.createLinearGradient(0, 0, 0, WORLD_H);
@@ -186,6 +219,7 @@ export function createBackground(makeCanvas: CanvasFactory = defaultFactory): Ba
       drawStars(ctx, 0, FAR_LAYERS_BEFORE_DECOR, warpMult);
       if (prev) drawDecor(ctx, prev, 1 - fade);
       drawDecor(ctx, cur, prev ? fade : 1);
+      if (cur.storm) drawStormStrike(ctx, clock, reduceFlashes);
       drawStars(ctx, FAR_LAYERS_BEFORE_DECOR, stars.length, warpMult);
     },
   };

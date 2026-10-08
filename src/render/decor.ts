@@ -1,5 +1,6 @@
 // src/render/decor.ts — OWNER: A5. Per-chapter planets and nebulae: spec table + canvas-free draw functions (§8.4).
 import { darken, lighten, mixColor, rgba, seededRandom } from './sprites/draw';
+import { henpoDecorSize, type HenpoDecorSpec } from './decor-henpo';
 
 const TAU = Math.PI * 2;
 
@@ -17,7 +18,7 @@ export interface NebulaSpec {
   colors: readonly string[];
   seed: number;
 }
-export type DecorSpec = PlanetSpec | NebulaSpec;
+export type DecorSpec = PlanetSpec | NebulaSpec | HenpoDecorSpec;
 
 export const DECOR_DRIFT_PX_S = 6;
 export const NEBULA_BLOBS_MIN = 6;
@@ -29,7 +30,7 @@ const RING_TILT = -0.35;
 const RING_SQUASH = 0.28;
 const RING_SCALE = 1.8;
 
-/** Index 0..4 = chapters 1..5. Chapters > 5 reuse ((n-1) % 5) + 1. */
+/** Index 0..4 = chapters 1..5 (classic). HENPO_DECOR continues at index 5 = chapter 6. */
 export const CHAPTER_DECOR: readonly (readonly DecorSpec[])[] = [
   [
     { type: 'nebula', x: 330, y: 300, w: 760, h: 520, colors: ['#7B4BD8', '#C04BD8', '#3B5BD8'], seed: 11 },
@@ -54,14 +55,55 @@ export const CHAPTER_DECOR: readonly (readonly DecorSpec[])[] = [
   ],
 ];
 
+/** Chapters 6–12 (index 0 = chapter 6). Cycle length matches the 12 chapter palettes. */
+export const HENPO_DECOR: readonly (readonly DecorSpec[])[] = [
+  [
+    { type: 'nebula', x: 640, y: 360, w: 900, h: 560, colors: ['#FF5FA2', '#9B5DE5', '#4B2A9A'], seed: 61 },
+    { type: 'nest', x: 300, y: 470, w: 300, color: '#FF8FC7', seed: 3 },
+    { type: 'nest', x: 980, y: 220, w: 220, color: '#C77DFF', seed: 7 },
+  ],
+  [
+    { type: 'nebula', x: 420, y: 380, w: 760, h: 520, colors: ['#FF7A1A', '#B8320A', '#FFB347'], seed: 67 },
+    { type: 'sun', x: 1180, y: 80, r: 120, core: '#FFF6C2', corona: '#FF9F1C' },
+  ],
+  [
+    { type: 'nebula', x: 640, y: 380, w: 1000, h: 560, colors: ['#3C7A6E', '#8A6B2A', '#2B4A44'], seed: 71 },
+    { type: 'gear', x: 210, y: 220, r: 150, teeth: 12, color: '#C9A227', spin: 0.12 },
+    { type: 'gear', x: 1080, y: 500, r: 110, teeth: 9, color: '#B98B2E', spin: -0.2 },
+  ],
+  [
+    { type: 'ripples', x: 640, y: 380, r: 360, color: '#FFD60A', rings: 6 },
+    { type: 'planet', x: 1040, y: 200, r: 96, colors: ['#FFF2A8', '#FFC21A', '#B8860B'], bands: false, ring: null, atmosphere: '#FFE066' },
+    { type: 'planet', x: 230, y: 470, r: 44, colors: ['#FFF8D0', '#E8B01A', '#A67C00'], bands: false, ring: null, atmosphere: '#FFE066' },
+  ],
+  [
+    { type: 'nebula', x: 640, y: 120, w: 1280, h: 360, colors: ['#2E3F66', '#1B2440', '#4A5A80'], seed: 79 },
+    { type: 'nebula', x: 640, y: 520, w: 1100, h: 420, colors: ['#1E2C4F', '#2A3A5E'], seed: 83 },
+  ],
+  [
+    { type: 'nebula', x: 640, y: 360, w: 1000, h: 600, colors: ['#3A0F5C', '#1A0530', '#5A1F7A'], seed: 89 },
+    { type: 'disk', x: 640, y: 210, r: 170, colors: ['#FFB347', '#FF5E3A', '#9B5DE5'], seed: 97 },
+  ],
+  [
+    { type: 'nebula', x: 640, y: 360, w: 1000, h: 600, colors: ['#8A0F2A', '#C0163E', '#4A0520'], seed: 101 },
+    { type: 'crown', x: 640, y: 170, w: 760, color: '#FFD60A', seed: 103 },
+    { type: 'dust', x: 640, y: 360, w: 1280, h: 720, color: '#FFD93B', count: 140, seed: 107 },
+  ],
+];
+
+/** All twelve chapter decor sets; index = (chapter - 1) mod 12. */
+export const DECOR_CYCLE: readonly (readonly DecorSpec[])[] = [...CHAPTER_DECOR, ...HENPO_DECOR];
+
 export function decorFor(chapter: number): readonly DecorSpec[] {
-  const idx = (((Math.floor(chapter) - 1) % CHAPTER_DECOR.length) + CHAPTER_DECOR.length) % CHAPTER_DECOR.length;
-  return CHAPTER_DECOR[idx];
+  const n = DECOR_CYCLE.length;
+  const idx = (((Math.floor(chapter) - 1) % n) + n) % n;
+  return DECOR_CYCLE[idx];
 }
 
 /** Canvas size in logical px for a spec (planets include atmosphere and ring margins). */
 export function decorSize(spec: DecorSpec): { w: number; h: number } {
   if (spec.type === 'nebula') return { w: spec.w, h: spec.h };
+  if (spec.type !== 'planet') return henpoDecorSize(spec);
   const m = spec.ring ? spec.r * RING_SCALE : spec.r * 1.25;
   return { w: Math.ceil(m * 2), h: Math.ceil(m * 2) };
 }
