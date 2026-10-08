@@ -1,7 +1,7 @@
 // src/audio/sfx-map.ts — OWNER: A4. Maps simulation events to sound ids (§8.8). Pure.
 import type { UiSound } from '../shared/contracts';
 import type { GameEvent } from '../sim/events';
-import type { EnemyKind } from '../sim/types';
+import type { EnemyKind, WeaponId } from '../sim/types';
 import type { SoundId } from './sfx';
 
 const UI_SOUNDS: Record<UiSound, SoundId> = {
@@ -27,9 +27,15 @@ function pickupSound(kind: string, hasWeaponChange: boolean): SoundId | null {
   return hasWeaponChange ? null : 'power';
 }
 
+/** Phase 0: the six new weapons borrow v1 sounds until H4 adds their own recipes. */
+const FIRE_SOUND: Record<WeaponId, SoundId> = {
+  pulse: 'fire_pulse', neutron: 'fire_neutron', laser: 'fire_laser', arc: 'fire_arc',
+  flak: 'fire_pulse', flame: 'fire_laser', sickle: 'fire_neutron', homing: 'fire_pulse', rail: 'fire_neutron', prism: 'fire_laser',
+};
+
 export function soundForEvent(e: GameEvent, hasWeaponChange: boolean): SoundId | null {
   switch (e.type) {
-    case 'player_fire': return `fire_${e.weapon}`;
+    case 'player_fire': return FIRE_SOUND[e.weapon];
     case 'enemy_hit': return 'hit';
     case 'enemy_killed': return killSound(e.kind);
     case 'egg_dropped': return 'egg_drop';

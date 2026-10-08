@@ -1,4 +1,4 @@
-// src/sim/enemies.ts — OWNER: A3. Enemy construction, per-tick update, egg dropping, asteroid splitting (§7.6).
+// src/sim/enemies.ts — OWNER: H3 (was A3). Enemy construction, per-tick update, egg dropping, asteroid splitting (§7.6).
 import type { Enemy, EnemyKind, GameState } from './types';
 import type { BehaviorState } from './behaviors.types';
 import { emit } from './events';
@@ -37,14 +37,16 @@ export function spawnEnemy(
   const boss = isBossKind(kind);
   const diff = DIFFICULTY[state.difficulty];
   const sc = chapterScale(state.chapter);
-  const hp = boss ? def.hp : Math.max(1, Math.round(def.hp * diff.enemyHp * sc.hp));
+  const m = state.mods;
+  const hp = boss ? def.hp : Math.max(1, Math.round(def.hp * diff.enemyHp * sc.hp * m.enemyHpMul));
   const points = boss ? def.points : Math.round((def.points * sc.points) / POINTS_ROUND_TO) * POINTS_ROUND_TO;
-  const eggRate = boss ? 0 : def.eggRate * diff.eggRate * sc.eggRate;
+  const eggRate = boss ? 0 : def.eggRate * diff.eggRate * sc.eggRate * m.enemyEggRateMul;
   const e: Enemy = {
     id: newId(state), kind, pos: { x, y }, vel: { x: 0, y: 0 }, radius: def.radius,
     hp, maxHp: hp, points, eggRate, alive: true, age: 0, hitFlash: 0,
     invulnerable: false, canDropEggs: false, carries: null, rotation: 0, anim: 0,
     isBoss: boss, behavior,
+    shield: 0, maxShield: 0, skillTimer: 0, skillState: 0, parentId: -1,
   };
   if (opts.counted !== false && !boss) e.carries = takeCarry(state);
   state.enemies.push(e);

@@ -1,4 +1,4 @@
-// src/render/renderer.ts — OWNER: A5. World renderer: draw order of §8.3, entity -> sprite mapping, frame selection.
+// src/render/renderer.ts — OWNER: H5 (was A5). World renderer: draw order of §8.3, entity -> sprite mapping, frame selection.
 import type { DrawOpts, Settings, SpriteApi, SpriteKey, View } from '../shared/contracts';
 import type { GameEvent } from '../sim/events';
 import type { Enemy, EnemyKind, GameState, PickupKind, ProjectileKind, Vec2, WeaponId } from '../sim/types';
@@ -26,16 +26,34 @@ export const ENEMY_SPRITE: Record<EnemyKind, SpriteKey> = {
   chicken_ufo: 'enemy_chicken_ufo', chick: 'enemy_chick',
   asteroid_l: 'enemy_asteroid_l', asteroid_m: 'enemy_asteroid_m', asteroid_s: 'enemy_asteroid_s',
   boss_hen: 'boss_hen', boss_carrier: 'boss_carrier', boss_rooster: 'boss_rooster', boss_dreadnought: 'boss_dreadnought',
+  chicken_ninja: 'enemy_chicken_ninja', chicken_bomber: 'enemy_chicken_bomber', egg_pod: 'enemy_egg_pod',
+  chicken_jet: 'enemy_chicken_jet', chicken_turret: 'enemy_chicken_turret', chicken_shield: 'enemy_chicken_shield',
+  chicken_mech: 'enemy_chicken_mech', space_mine: 'enemy_space_mine', chicken_ghost: 'enemy_chicken_ghost',
+  chicken_healer: 'enemy_chicken_healer', chicken_sniper: 'enemy_chicken_sniper', chicken_mother: 'enemy_chicken_mother',
+  chicken_void: 'enemy_chicken_void', chicken_gold: 'enemy_chicken_gold', chicken_elite: 'enemy_chicken_elite',
+  comet: 'enemy_comet',
+  boss_broodmother: 'boss_broodmother', boss_rotisserie: 'boss_rotisserie', boss_colossus: 'boss_colossus',
+  boss_kraken: 'boss_kraken', boss_phoenix: 'boss_phoenix', boss_scrambler: 'boss_scrambler', boss_empress: 'boss_empress',
+  boss_mini_brigadier: 'boss_mini_brigadier', boss_mini_ace: 'boss_mini_ace', boss_mini_cuckoo: 'boss_mini_cuckoo',
+  boss_mini_jelly: 'boss_mini_jelly', boss_mini_stormcrow: 'boss_mini_stormcrow', boss_mini_scarecrow: 'boss_mini_scarecrow',
+  boss_mini_guard: 'boss_mini_guard',
 };
 export const PICKUP_SPRITE: Record<PickupKind, SpriteKey> = {
   drumstick: 'pickup_drumstick', roast: 'pickup_roast', power_core: 'pickup_power_core',
   gift_pulse: 'pickup_gift_pulse', gift_neutron: 'pickup_gift_neutron', gift_laser: 'pickup_gift_laser', gift_arc: 'pickup_gift_arc',
+  gift_flak: 'pickup_gift_flak', gift_flame: 'pickup_gift_flame', gift_sickle: 'pickup_gift_sickle',
+  gift_homing: 'pickup_gift_homing', gift_rail: 'pickup_gift_rail', gift_prism: 'pickup_gift_prism',
+  pu_shield: 'pickup_pu_shield', pu_magnet: 'pickup_pu_magnet', pu_rapid: 'pickup_pu_rapid', pu_drones: 'pickup_pu_drones',
+  pu_timewarp: 'pickup_pu_timewarp', pu_double: 'pickup_pu_double',
+  life_up: 'pickup_life_up', golden_egg: 'pickup_golden_egg', corn: 'pickup_corn',
 };
 export const BOLT_SPRITE: Record<WeaponId, SpriteKey> = {
   pulse: 'proj_pulse', neutron: 'proj_neutron', laser: 'proj_laser', arc: 'proj_arc',
+  flak: 'proj_flak', flame: 'proj_flame', sickle: 'proj_sickle', homing: 'proj_homing', rail: 'proj_rail', prism: 'proj_prism',
 };
 export const PROJECTILE_SPRITE: Record<Exclude<ProjectileKind, 'bolt'>, SpriteKey> = {
   missile: 'proj_missile', egg: 'proj_egg', enemy_shot: 'proj_enemy_shot', boss_egg: 'proj_boss_egg', feather_knife: 'proj_feather_knife',
+  cluster_egg: 'proj_cluster_egg', shard: 'proj_shard', void_orb: 'proj_void_orb', fireball: 'proj_fireball', gear: 'proj_gear',
 };
 
 export function animFrame(time: number, fps: number, id: number, frames: number): number {

@@ -17,15 +17,13 @@ import { DT } from '../src/sim/tuning/core';
 import type { Enemy, EnemyKind, GameState } from '../src/sim/types';
 import type { BossId } from '../src/sim/bosses.types';
 
-const KIND_BY_BOSS: Record<BossId, EnemyKind> = {
-  hen: 'boss_hen', carrier: 'boss_carrier', rooster: 'boss_rooster', twin_hens: 'boss_hen', dreadnought: 'boss_dreadnought',
-};
+const KIND_BY_BOSS = (id: BossId): EnemyKind => (id === 'twin_hens' ? 'boss_hen' : (('boss_' + id) as EnemyKind));
 
 spawnBossMock.mockImplementation((state: GameState, id: BossId) => {
   const e: Enemy = {
-    id: state.nextId++, kind: KIND_BY_BOSS[id], pos: { x: 640, y: 170 }, vel: { x: 0, y: 0 }, radius: 95, hp: 50, maxHp: 50,
+    id: state.nextId++, kind: KIND_BY_BOSS(id), pos: { x: 640, y: 170 }, vel: { x: 0, y: 0 }, radius: 95, hp: 50, maxHp: 50,
     points: 10000, eggRate: 0, alive: true, age: 0, hitFlash: 0, invulnerable: false, canDropEggs: false, carries: null,
-    rotation: 0, anim: 0, isBoss: true, behavior: { type: 'none' },
+    rotation: 0, anim: 0, isBoss: true, behavior: { type: 'none' }, shield: 0, maxShield: 0, skillTimer: 0, skillState: 0, parentId: -1,
   };
   state.enemies.push(e);
   state.bossName = 'TEST BOSS';
@@ -38,7 +36,7 @@ function make(chapter: number, wave: number): GameState {
 }
 
 describe('boss waves', () => {
-  it.each([[1, 'hen'], [2, 'carrier'], [3, 'rooster'], [4, 'twin_hens'], [5, 'dreadnought'], [6, 'hen'], [9, 'twin_hens']])(
+  it.each([[1, 'hen'], [2, 'carrier'], [3, 'rooster'], [4, 'twin_hens'], [5, 'dreadnought'], [6, 'broodmother'], [12, 'empress'], [13, 'hen'], [16, 'twin_hens']])(
     'chapter %i wave 10 calls spawnBoss(%s) exactly once from startWave',
     (c, id) => {
       spawnBossMock.mockClear();
@@ -66,7 +64,7 @@ describe('boss waves', () => {
         state.enemies.push({
           id: state.nextId++, kind: 'boss_hen', pos: { x: 400 + i * 480, y: 170 }, vel: { x: 0, y: 0 }, radius: 95, hp: 5, maxHp: 5,
           points: 8000, eggRate: 0, alive: true, age: 0, hitFlash: 0, invulnerable: false, canDropEggs: false, carries: null,
-          rotation: 0, anim: 0, isBoss: true, behavior: { type: 'none' },
+          rotation: 0, anim: 0, isBoss: true, behavior: { type: 'none' }, shield: 0, maxShield: 0, skillTimer: 0, skillState: 0, parentId: -1,
         });
       }
     });

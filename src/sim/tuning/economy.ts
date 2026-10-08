@@ -1,4 +1,4 @@
-// src/sim/tuning/economy.ts — OWNER: A1. Pickups, drops, scoring constants (§7.5, §7.8, §7.9).
+// src/sim/tuning/economy.ts — OWNER: LEAD. Pickups, drops, scoring constants (§7.5, §7.8, §7.9).
 import type { PickupKind } from '../types';
 
 export const FOOD_PER_MISSILE = 100;
@@ -13,6 +13,8 @@ export interface PickupDef { radius: number; motion: PickupMotion }
 
 const FOOD_POP = { popVy: -140, popVx: 40, gravity: 380, maxFall: 300 } as const;
 const GIFT_MOTION: PickupMotion = { type: 'sway', fall: 110, swayAmp: 30, swayHz: 1.2, spin: 1 };
+const PU_MOTION: PickupMotion = { type: 'sway', fall: 100, swayAmp: 26, swayHz: 1.4, spin: 0 };
+const CORN_MOTION: PickupMotion = { type: 'pop', popVy: -160, popVx: 60, gravity: 380, maxFall: 280, spin: 3 };
 
 export const PICKUP_DEFS: Record<PickupKind, PickupDef> = {
   drumstick:    { radius: 14, motion: { type: 'pop', ...FOOD_POP, spin: 4 } },
@@ -22,6 +24,21 @@ export const PICKUP_DEFS: Record<PickupKind, PickupDef> = {
   gift_neutron: { radius: 20, motion: GIFT_MOTION },
   gift_laser:   { radius: 20, motion: GIFT_MOTION },
   gift_arc:     { radius: 20, motion: GIFT_MOTION },
+  gift_flak:    { radius: 20, motion: GIFT_MOTION },
+  gift_flame:   { radius: 20, motion: GIFT_MOTION },
+  gift_sickle:  { radius: 20, motion: GIFT_MOTION },
+  gift_homing:  { radius: 20, motion: GIFT_MOTION },
+  gift_rail:    { radius: 20, motion: GIFT_MOTION },
+  gift_prism:   { radius: 20, motion: GIFT_MOTION },
+  pu_shield:    { radius: 18, motion: PU_MOTION },
+  pu_magnet:    { radius: 18, motion: PU_MOTION },
+  pu_rapid:     { radius: 18, motion: PU_MOTION },
+  pu_drones:    { radius: 18, motion: PU_MOTION },
+  pu_timewarp:  { radius: 18, motion: PU_MOTION },
+  pu_double:    { radius: 18, motion: PU_MOTION },
+  life_up:      { radius: 18, motion: { type: 'sway', fall: 90, swayAmp: 34, swayHz: 1, spin: 0 } },
+  golden_egg:   { radius: 18, motion: { type: 'pop', ...FOOD_POP, spin: 1.5 } },
+  corn:         { radius: 12, motion: CORN_MOTION },
 };
 
 export const PICKUP_REMOVE_Y = 760;

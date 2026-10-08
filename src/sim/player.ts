@@ -1,30 +1,58 @@
-// src/sim/player.ts — OWNER: A2. Ship movement, death and respawn (§7.3).
-import type { Difficulty, GameState, InputFrame, Player } from './types';
+// src/sim/player.ts — OWNER: H1 (was A2). Ship movement, death and respawn (§7.3), shields and revives.
+import type { Difficulty, GameState, InputFrame, Loadout, Player } from './types';
 import { emit } from './events';
 import { approach, clamp } from './math';
 import { DIFFICULTY } from './difficulty';
 import { clearEnemyProjectiles } from './projectiles';
-import { PHASE_TIME, SHIP_MAX_X, SHIP_MAX_Y, SHIP_MIN_X, SHIP_MIN_Y, SHIP_SPAWN } from './tuning/core';
+import { MAX_LIVES, MAX_MISSILES, MAX_POWER, PHASE_TIME, SHIP_MAX_X, SHIP_MAX_Y, SHIP_MIN_X, SHIP_MIN_Y, SHIP_SPAWN } from './tuning/core';
+import {
+  FURY_DEATH_KEEP, MAX_SHIELD, MUTATORS, REVIVE_CLEAR_RADIUS, REVIVE_INVULN, SHIELD_CLEAR_RADIUS, SHIELD_HIT_INVULN,
+  SHIPS, UPGRADES,
+} from './tuning/loadout';
+import { emptyPowerups, breakCombo } from './powerups';
+import { DEFAULT_LOADOUT } from './mods';
 import { PLAYER, TIMER_EPSILON } from './tuning/weapons';
 
-export function createPlayer(d: Difficulty): Player {
+function upgradeSum(loadout: Loadout, key: 'power' | 'lives' | 'missiles'): number {
+  let n = 0;
+  for (const [id, lvl] of Object.entries(loadout.upgrades) as [keyof typeof UPGRADES, number][]) {
+    const def = UPGRADES[id];
+    if (def) n += (def[key] ?? 0) * Math.min(lvl, def.costs.length);
+  }
+  return n;
+}
+
+/** Starting ship for a difficulty and loadout (ship stats, hangar upgrades, hardcore mutator). */
+export function createPlayer(d: Difficulty, loadout: Loadout = DEFAULT_LOADOUT): Player {
+  const ship = SHIPS[loadout.ship];
+  let lives = Math.max(1, DIFFICULTY[d].lives + ship.lives + upgradeSum(loadout, 'lives'));
+  for (const m of loadout.mutators) {
+    const o = MUTATORS[m].livesOverride;
+    if (o !== undefined) lives = o;
+  }
   return {
     pos: { x: SHIP_SPAWN.x, y: SHIP_SPAWN.y },
-    radius: PLAYER.radius,
+    radius: ship.radius,
     pickupRadius: PLAYER.pickupRadius,
     alive: true,
-    lives: DIFFICULTY[d].lives,
+    lives: Math.min(MAX_LIVES, lives),
     weapon: 'pulse',
-    power: 0,
+    power: Math.min(MAX_POWER, ship.power + upgradeSum(loadout, 'power')),
     heat: 0,
     overheated: false,
     fireCooldown: 0,
-    missiles: DIFFICULTY[d].missiles,
+    missiles: Math.min(MAX_MISSILES, DIFFICULTY[d].missiles + ship.missiles + upgradeSum(loadout, 'missiles')),
     missileCooldown: 0,
     food: 0,
     invulnTimer: PLAYER.startInvuln,
     respawnTimer: 0,
     bank: 0,
+    ship: loadout.ship,
+    shield: Math.min(MAX_SHIELD, ship.shield),
+    revives: ship.revives,
+    fury: 0,
+    overdrive: 0,
+    powerups: emptyPowerups(),
   };
 }
 
@@ -33,7 +61,7 @@ function respawn(state: GameState): void {
   p.alive = true;
   p.pos.x = SHIP_SPAWN.x;
   p.pos.y = SHIP_SPAWN.y;
-  p.invulnTimer = PLAYER.respawnInvuln;
+  p.invulnTimer = PLAYER.respawnInvuln + state.mods.invulnBonus;
   p.respawnTimer = 0;
   p.bank = 0;
   clearEnemyProjectiles(state, { x: SHIP_SPAWN.x, y: SHIP_SPAWN.y }, PLAYER.respawnClearRadius);
@@ -95,10 +123,32 @@ export function isPlayerVulnerable(state: GameState): boolean {
 export function killPlayer(state: GameState): void {
   if (!isPlayerVulnerable(state)) return;
   const p = state.player;
+  if (p.shield > 0) {
+    p.shield -= 1;
+    p.invulnTimer = SHIELD_HIT_INVULN;
+    clearEnemyProjectiles(state, p.pos, SHIELD_CLEAR_RADIUS);
+    emit(state, { type: 'shield_absorb', x: p.pos.x, y: p.pos.y, left: p.shield });
+    return;
+  }
+  if (p.revives > 0) {
+    p.revives -= 1;
+    p.invulnTimer = REVIVE_INVULN;
+    clearEnemyProjectiles(state, p.pos, REVIVE_CLEAR_RADIUS);
+    breakCombo(state);
+    emit(state, { type: 'player_revived', x: p.pos.x, y: p.pos.y, left: p.revives });
+    return;
+  }
   p.alive = false;
   p.lives -= 1;
+  breakCombo(state);
+  p.fury *= FURY_DEATH_KEEP;
+  if (p.overdrive > 0) {
+    p.overdrive = 0;
+    emit(state, { type: 'overdrive_end' });
+  }
   const before = p.power;
-  p.power = Math.max(0, p.power - DIFFICULTY[state.difficulty].deathPowerLoss);
+  const loss = Math.max(0, DIFFICULTY[state.difficulty].deathPowerLoss + state.mods.powerLossOnDeath);
+  p.power = Math.max(0, p.power - loss);
   if (p.power !== before) emit(state, { type: 'power_changed', power: p.power, delta: p.power - before });
   p.heat = 0;
   p.overheated = false;

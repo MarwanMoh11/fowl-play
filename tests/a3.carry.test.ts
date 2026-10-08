@@ -16,7 +16,7 @@ function makeState(chapter: number, wave: number, seed = 5): GameState {
 }
 
 const NON_BOSS: [number, number][] = [];
-for (let c = 1; c <= 6; c++) for (let w = 1; w <= 9; w++) NON_BOSS.push([c, w]);
+for (let c = 1; c <= 13; c++) for (let w = 1; w <= 9; w++) if (c <= 5 || c >= 13 || w !== 5) NON_BOSS.push([c, w]); // 6–12: wave 5 is a mini-boss
 
 describe('carry plan', () => {
   it.each(NON_BOSS)('chapter %i wave %i plans exactly one core (+ one gift on waves 3/6/9)', (c, w) => {

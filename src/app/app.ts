@@ -1,10 +1,12 @@
-// src/app/app.ts — OWNER: A1. Screen flow, wiring of sim/render/audio/ui (§5.4).
-import type { AppScreen, AudioSystem, Renderer, Settings, UI } from '../shared/contracts';
-import type { Difficulty, GameState } from '../sim/types';
+// src/app/app.ts — OWNER: LEAD. Screen flow, wiring of sim/render/audio/ui (§5.4, HENPOCALYPSE §5).
+import type { AppScreen, AudioSystem, Renderer, Settings, StartOptions, UI } from '../shared/contracts';
+import type { GameState } from '../sim/types';
 import type { GameEvent } from '../sim/events';
 import type { DebugCommand } from '../sim/debug';
 import { applyDebug } from '../sim/debug';
-import { continueEndless, createGame } from '../sim/game';
+import { choosePerk, continueEndless, createGame } from '../sim/game';
+import { dailyMutators, dailySeed } from '../sim/modes';
+import { DEFAULT_LOADOUT } from '../sim/mods';
 import { createRenderer } from '../render';
 import { createAudio } from '../audio';
 import { createUI } from '../ui';
@@ -18,7 +20,13 @@ import { createFpsMeter, type FpsMeter } from './fps';
 const DEBUG_KEYS: Record<string, DebugCommand> = {
   Digit1: 'toggleHitboxes', Digit2: 'toggleGod', Digit3: 'killAll', Digit4: 'powerUp',
   Digit5: 'cycleWeapon', Digit6: 'addMissiles', Digit7: 'jumpToBoss',
+  Digit8: 'spawnPowerup', Digit9: 'fillFury', Digit0: 'nextWave',
 };
+
+/** Local calendar date as YYYYMMDD (daily runs). */
+export function todayYmd(d: Date = new Date()): number {
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
 
 export interface App {
   screen: AppScreen;
@@ -42,7 +50,8 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
   const audio = createAudio();
   audio.setVolumes(settings.masterVolume, settings.musicVolume, settings.sfxVolume);
   const input = createInput(canvas);
-  let difficulty: Difficulty = settings.difficulty;
+  let lastStart: StartOptions = { difficulty: settings.difficulty, mode: 'campaign', loadout: DEFAULT_LOADOUT };
+  let dailyDate = 0;
 
   function newSeed(): number {
     return params.seed ?? ((Date.now() ^ 0x5f3759df) >>> 0);
@@ -62,11 +71,21 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
     input.setCapture(s === 'playing');
   }
 
-  function startGame(d: Difficulty): void {
-    difficulty = d;
+  function startGame(opts: StartOptions): void {
+    lastStart = opts;
+    let seed = newSeed();
+    let loadout = opts.loadout;
+    dailyDate = 0;
+    if (opts.mode === 'daily') {
+      dailyDate = todayYmd();
+      seed = dailySeed(dailyDate);
+      loadout = { ...loadout, mutators: dailyMutators(seed) };
+    }
     app.state = createGame({
-      seed: newSeed(),
-      difficulty: d,
+      seed,
+      difficulty: opts.difficulty,
+      mode: opts.mode,
+      loadout,
       startChapter: params.debug ? params.chapter ?? undefined : undefined,
       startWave: params.debug ? params.wave ?? undefined : undefined,
       debug: { godMode: params.god },
@@ -94,7 +113,16 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
       audio.unlock();
     },
     onRestart(): void {
-      startGame(difficulty);
+      startGame(lastStart);
+    },
+    onDraftChoice(index: number): void {
+      if (app.screen !== 'draft' || !app.state) return;
+      const from = app.state.events.length;
+      choosePerk(app.state, index);
+      input.reset();
+      setScreen('playing');
+      ui.hide();
+      dispatch(app.state.events.slice(from));
     },
     onQuitToTitle(): void {
       app.state = null;
@@ -128,13 +156,17 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
     input,
     fps: createFpsMeter(),
     onSimEvents(events: readonly GameEvent[]): void {
+      if (app.state && events.length > 0) ui.trackEvents(events, app.state);
       for (const e of events) {
         if (e.type === 'game_over' && app.state) {
           setScreen('gameover');
-          ui.showGameOver(buildRunSummary(app.state, false));
+          ui.showGameOver(buildRunSummary(app.state, false, dailyDate));
         } else if (e.type === 'victory' && app.state) {
           setScreen('victory');
-          ui.showVictory(buildRunSummary(app.state, true));
+          ui.showVictory(buildRunSummary(app.state, true, dailyDate));
+        } else if (e.type === 'perk_draft' && app.state) {
+          setScreen('draft');
+          ui.showDraft(app.state);
         }
       }
     },
@@ -171,8 +203,12 @@ export function createApp(canvas: HTMLCanvasElement, uiRoot: HTMLElement): App {
 
   if (params.gallery) {
     setScreen('title');
-  } else if (params.debug && (params.chapter !== null || params.wave !== null)) {
-    startGame(settings.difficulty);
+  } else if (params.debug && (params.chapter !== null || params.wave !== null || params.mode !== null)) {
+    startGame({
+      difficulty: settings.difficulty,
+      mode: params.mode ?? 'campaign',
+      loadout: { ship: params.ship ?? 'falcon', upgrades: {}, mutators: params.mutators },
+    });
   } else {
     setScreen('title');
     ui.showTitle();

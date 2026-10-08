@@ -1,7 +1,7 @@
 // tests/a5.sprites.test.ts — OWNER: A5. Registry metadata, atlas packing and draw functions (no real canvas).
 import { describe, expect, it } from 'vitest';
 import { SPRITE_KEYS, WEAPON_INFO } from '../src/shared/contracts';
-import { packSprites, spriteSize } from '../src/render/sprites/atlas';
+import { bakeScale, packSprites, spriteSize } from '../src/render/sprites/atlas';
 import { SPRITE_REGISTRY } from '../src/render/sprites/registry';
 import { ATLAS_SCALE } from '../src/render/sprites/palette';
 import { mockCtx } from './a5.mockctx';
@@ -95,7 +95,7 @@ describe('a5 atlas packing', () => {
   const layout = packSprites(defs, ATLAS_SCALE);
 
   it('gives every frame a rect inside the atlas and never overlaps', () => {
-    const all: { x: number; y: number; w: number; h: number; id: string }[] = [];
+    const all: { x: number; y: number; w: number; h: number; page: number; id: string }[] = [];
     for (const d of defs) {
       expect(layout.rects[d.key].length).toBe(d.frames);
       layout.rects[d.key].forEach((r, f) => {
@@ -104,7 +104,10 @@ describe('a5 atlas packing', () => {
         expect(r.y).toBeGreaterThanOrEqual(0);
         expect(r.x + r.w).toBeLessThanOrEqual(layout.width);
         expect(r.y + r.h).toBeLessThanOrEqual(layout.height);
-        expect(r.w).toBe(Math.ceil((d.w + d.pad * 2) * ATLAS_SCALE));
+        expect(r.w).toBe(Math.ceil((d.w + d.pad * 2) * bakeScale(d, ATLAS_SCALE)));
+        expect(r.page).toBeLessThan(layout.pages.length);
+        expect(r.x + r.w).toBeLessThanOrEqual(layout.pages[r.page].width);
+        expect(r.y + r.h).toBeLessThanOrEqual(layout.pages[r.page].height);
         all.push({ ...r, id: `${d.key}#${f}` });
       });
     }
@@ -112,14 +115,15 @@ describe('a5 atlas packing', () => {
       for (let j = i + 1; j < all.length; j++) {
         const a = all[i];
         const b = all[j];
-        const overlap = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+        const overlap = a.page === b.page && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
         expect(overlap, `${a.id} vs ${b.id}`).toBe(false);
       }
     }
   });
 
-  it('keeps the atlas within a sane texture size', () => {
+  it('keeps every atlas page within a sane texture size and the total within the memory budget', () => {
     expect(layout.width).toBeLessThanOrEqual(2048);
     expect(layout.height).toBeLessThanOrEqual(4096);
+    expect(layout.pages.length).toBeLessThanOrEqual(3);   // ≤ 3 pages × (colour + flash) × 32 MB
   });
 });

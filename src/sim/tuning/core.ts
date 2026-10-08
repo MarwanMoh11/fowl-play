@@ -1,4 +1,4 @@
-// src/sim/tuning/core.ts — OWNER: A1 — CONTRACT v1
+// src/sim/tuning/core.ts — OWNER: LEAD — CONTRACT v2
 export const WORLD_W = 1280;
 export const WORLD_H = 720;
 export const DT = 1 / 60;
@@ -26,10 +26,13 @@ export const PHASE_TIME = {
   chapterCompleteSkippableAfter: 1.5,
   warp: 3.0,
   gameOverDelay: 2.0,                  // dead with 0 lives → game_over after this
+  draftAuto: 30.0,                     // perk_draft auto-picks option 0 after this (headless runs only;
+                                       // the app stops stepping while the draft screen is open)
 } as const;
 
 export const WAVES_PER_CHAPTER = 10;
-export const FINAL_CHAPTER = 5;
+export const FINAL_CHAPTER = 12;        // campaign length (classic chapters 1–5 + HENPOCALYPSE 6–12)
+export const CLASSIC_CHAPTERS = 5;
 export const MAX_LIVES = 9;
 export const MAX_MISSILES = 99;
 export const MAX_POWER = 10;

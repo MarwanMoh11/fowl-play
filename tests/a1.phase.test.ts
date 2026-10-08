@@ -10,7 +10,8 @@ vi.mock('../src/sim/waves', async (importOriginal) => ({
   isWaveComplete: vi.fn(() => ctl.complete),
 }));
 
-import { canFire, continueEndless, createGame, NEUTRAL_INPUT, step } from '../src/sim/game';
+import { canFire, choosePerk, continueEndless, createGame, NEUTRAL_INPUT, step } from '../src/sim/game';
+import { emptyStats } from '../src/sim/scoring';
 import { waveInfo } from '../src/sim/waves';
 import { DT } from '../src/sim/tuning/core';
 import type { GameEvent } from '../src/sim/events';
@@ -30,6 +31,13 @@ function runUntil(s: GameState, pred: (s: GameState) => boolean, max: number, in
     if (pred(s)) return { ticks: i, events };
   }
   throw new Error(`condition not reached in ${max} ticks (phase ${s.phase})`);
+}
+
+/** Boss waves open a perk draft; take an empty pick so scores stay predictable. */
+function skipDraft(s: GameState): void {
+  runUntil(s, (g) => g.phase === 'perk_draft', 1000);
+  s.draft = { options: [] };
+  choosePerk(s, 0);
 }
 
 function newGame(startChapter = 1, startWave = 1): GameState {
@@ -88,10 +96,12 @@ describe('phase machine', () => {
 
   it('boss cleared → chapter bonus → skippable tally → warp → next chapter', () => {
     const s = newGame(1, 10);
-    s.chapterStats = { shotsFired: 10, shotsHit: 5, kills: 3, foodCollected: 4, deaths: 1 };
+    s.chapterStats = { ...s.chapterStats, shotsFired: 10, shotsHit: 5, kills: 3, foodCollected: 4, deaths: 1 };
     s.player.power = 2;
     ctl.complete = true;
-    const r = runUntil(s, (g) => g.phase === 'chapter_complete', 1000);
+    skipDraft(s);
+    expect(s.phase).toBe('chapter_complete');
+    const r = { events: s.events };
     const done = r.events.find((e) => e.type === 'chapter_complete');
     expect(done).toBeDefined();
     const expected = 50 * 200 + 4 * 50 + 0 + 2 * 1000;
@@ -110,21 +120,21 @@ describe('phase machine', () => {
     expect(r3.ticks).toBe(ticksFor(3.0));
     expect(s.wave).toBe(1);
     expect(s.phase).toBe('wave_intro');
-    expect(s.chapterStats).toEqual({ shotsFired: 0, shotsHit: 0, kills: 0, foodCollected: 0, deaths: 0 });
+    expect(s.chapterStats).toEqual(emptyStats());
   });
 
   it('tally ends by itself after 5 s', () => {
     const s = newGame(2, 10);
     ctl.complete = true;
-    runUntil(s, (g) => g.phase === 'chapter_complete', 1000);
+    skipDraft(s);
     const { ticks } = runUntil(s, (g) => g.phase === 'warp', 1000);
     expect(ticks).toBe(ticksFor(5.0));
   });
 
-  it('final chapter → victory once; continueEndless → warp → chapter 6', () => {
-    const s = newGame(5, 10);
+  it('final chapter → victory once; continueEndless → warp → chapter 13', () => {
+    const s = newGame(12, 10);
     ctl.complete = true;
-    runUntil(s, (g) => g.phase === 'chapter_complete', 1000);
+    skipDraft(s);
     const r = runUntil(s, (g) => g.phase === 'victory', 1000, SKIP);
     expect(r.events.filter((e) => e.type === 'victory')).toHaveLength(1);
     expect(s.banner).toMatchObject({ style: 'big', title: 'COOP LIBERATED!' });
@@ -137,17 +147,17 @@ describe('phase machine', () => {
     continueEndless(s);
     expect(s.endless).toBe(true);
     expect(s.phase).toBe('warp');
-    expect(s.events).toContainEqual({ type: 'warp_start', nextChapter: 6 });
+    expect(s.events).toContainEqual({ type: 'warp_start', nextChapter: 13 });
     ctl.complete = false;
-    runUntil(s, (g) => g.chapter === 6, 1000);
+    runUntil(s, (g) => g.chapter === 13, 1000);
     expect(s.phase).toBe('wave_intro');
   });
 
-  it('endless chapter 10 warps instead of winning again', () => {
-    const s = newGame(10, 10);
+  it('endless chapter 24 warps instead of winning again', () => {
+    const s = newGame(24, 10);
     s.endless = true;
     ctl.complete = true;
-    runUntil(s, (g) => g.phase === 'chapter_complete', 1000);
+    skipDraft(s);
     runUntil(s, (g) => g.phase === 'warp', 1000);
   });
 

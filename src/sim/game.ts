@@ -1,5 +1,6 @@
-// src/sim/game.ts — OWNER: A1. Game creation, fixed step, phase machine (§6.7, §7.10).
-import type { Banner, DebugFlags, Difficulty, GameState, InputFrame, Phase } from './types';
+// src/sim/game.ts — OWNER: LEAD. Game creation, fixed step, phase machine (§6.7, §7.10, HENPOCALYPSE §5).
+import type { Banner, DebugFlags, Difficulty, GameMode, GameState, InputFrame, Loadout, Phase, Vec2 } from './types';
+import { clamp } from './math';
 import { emit } from './events';
 import { emptyWaveRuntime } from './waves.types';
 import { createPlayer, updatePlayer } from './player';
@@ -7,11 +8,18 @@ import { updateWeapons } from './weapons';
 import { updateMissile } from './missile';
 import { updateProjectiles } from './projectiles';
 import { updateEnemies } from './enemies';
-import { isWaveComplete, startWave, updateWaveSpawner, waveInfo } from './waves';
+import { isWaveComplete, startWave, updateWaveSpawner } from './waves';
+import { currentWaveInfo, finalChapter, wavesInChapter } from './modes';
+import { computeMods, DEFAULT_LOADOUT } from './mods';
+import { enemyTimeScale, updateCombo, updatePowerups } from './powerups';
+import { applyDraftChoice, openDraft } from './draft';
+import { MAX_SHIELD } from './tuning/loadout';
 import { updatePickups } from './pickups';
 import { resolveCollisions } from './collisions';
 import { addScore, computeChapterBonus, emptyStats } from './scoring';
-import { EXTRA_LIFE_EVERY, FINAL_CHAPTER, PHASE_TIME, WAVES_PER_CHAPTER } from './tuning/core';
+import {
+  EXTRA_LIFE_EVERY, PHASE_TIME, SHIP_MAX_X, SHIP_MAX_Y, SHIP_MIN_X, SHIP_MIN_Y, WAVES_PER_CHAPTER,
+} from './tuning/core';
 
 export interface NewGameOptions {
   seed: number;
@@ -19,10 +27,12 @@ export interface NewGameOptions {
   startChapter?: number;
   startWave?: number;
   debug?: Partial<DebugFlags>;
+  mode?: GameMode;          // default 'campaign'
+  loadout?: Loadout;        // default DEFAULT_LOADOUT (falcon, no upgrades, no mutators)
 }
 
 export const NEUTRAL_INPUT: InputFrame = Object.freeze({
-  moveX: 0, moveY: 0, pointer: null, fire: false, missile: false, skip: false,
+  moveX: 0, moveY: 0, pointer: null, fire: false, missile: false, skip: false, overdrive: false,
 });
 
 const BANNER_TTL = {
@@ -44,6 +54,7 @@ function after(t: number, seconds: number): boolean {
 }
 
 export function createGame(opts: NewGameOptions): GameState {
+  const loadout: Loadout = cloneLoadout(opts.loadout ?? DEFAULT_LOADOUT);
   const state: GameState = {
     seed: opts.seed >>> 0,
     tick: 0,
@@ -61,7 +72,7 @@ export function createGame(opts: NewGameOptions): GameState {
     bossThresholds: [],
     score: 0,
     nextExtraLifeAt: EXTRA_LIFE_EVERY,
-    player: createPlayer(opts.difficulty),
+    player: createPlayer(opts.difficulty, loadout),
     enemies: [],
     projectiles: [],
     pickups: [],
@@ -74,9 +85,21 @@ export function createGame(opts: NewGameOptions): GameState {
     events: [],
     nextId: 1,
     debug: { godMode: false, showHitboxes: false, infiniteMissiles: false, ...opts.debug },
+    mode: opts.mode ?? 'campaign',
+    loadout,
+    mods: computeMods(loadout, {}),
+    perks: {},
+    draft: null,
+    combo: { count: 0, timer: 0, mult: 1, best: 0 },
+    corn: 0,
+    waveCount: 0,
   };
   beginWave(state);
   return state;
+}
+
+function cloneLoadout(l: Loadout): Loadout {
+  return { ship: l.ship, upgrades: { ...l.upgrades }, mutators: l.mutators.slice() };
 }
 
 export function step(state: GameState, input: InputFrame, dt: number): void {
@@ -88,15 +111,18 @@ export function step(state: GameState, input: InputFrame, dt: number): void {
   updatePlayer(state, input, dt);           // A2
   updateWeapons(state, input, dt);          // A2
   updateMissile(state, input, dt);          // A2
+  updatePowerups(state, input, dt, canFire(state)); // LEAD: power-up timers, fury → overdrive
+  if (state.phase === 'wave_active') updateCombo(state, dt); // combos survive between waves
+  const edt = dt * enemyTimeScale(state);   // time warp slows the whole armada
   if (state.phase === 'wave_intro' || state.phase === 'boss_intro' || state.phase === 'wave_active') {
-    updateWaveSpawner(state, dt);           // A3
+    updateWaveSpawner(state, edt);          // H3
   }
-  updateEnemies(state, dt);                 // A3 (calls A2 updateBoss for isBoss enemies)
-  updateProjectiles(state, dt);             // A2
-  updatePickups(state, dt);                 // A1
-  updateHazards(state, dt);                 // A1
-  resolveCollisions(state);                 // A1 — §7.6.4
-  compact(state);                           // A1
+  updateEnemies(state, edt);                // H3 (calls H2 updateBoss for isBoss enemies)
+  updateProjectiles(state, dt);             // H1 (scales enemy-owned projectiles by enemyTimeScale itself)
+  updatePickups(state, dt);                 // LEAD
+  updateHazards(state, dt);                 // LEAD (gravity wells pull the ship)
+  resolveCollisions(state);                 // LEAD — §7.6.4
+  compact(state);                           // LEAD
 }
 
 export function canFire(state: GameState): boolean {
@@ -120,7 +146,8 @@ function setBanner(state: GameState, style: Banner['style'], title: string, subt
 }
 
 export function beginWave(state: GameState): void {
-  const info = waveInfo(state.chapter, state.wave);
+  state.waveCount += 1;
+  const info = currentWaveInfo(state);
   state.chapterName = info.chapterName;
   state.waveName = info.waveName;
   state.bossName = null;
@@ -149,7 +176,7 @@ function updateBanner(state: GameState, dt: number): void {
 }
 
 function finishChapterTally(state: GameState): void {
-  if (state.chapter === FINAL_CHAPTER && !state.endless) {
+  if (state.chapter >= finalChapter(state) && !state.endless) {
     emit(state, { type: 'victory', score: state.score });
     setBanner(state, 'big', 'COOP LIBERATED!', '', BANNER_TTL.final);
     setPhase(state, 'victory');
@@ -189,16 +216,15 @@ export function updatePhase(state: GameState, input: InputFrame, dt: number): vo
       break;
     case 'wave_clear':
       if (!after(t, PHASE_TIME.waveClear)) break;
-      if (state.wave < WAVES_PER_CHAPTER) {
-        state.wave += 1;
-        beginWave(state);
+      if (currentWaveInfo(state).isBoss) {
+        openDraft(state);
+        setPhase(state, 'perk_draft');
       } else {
-        const bonus = computeChapterBonus(state);
-        state.lastChapterBonus = bonus;
-        addScore(state, bonus.total);
-        emit(state, { type: 'chapter_complete', chapter: state.chapter, bonus });
-        setPhase(state, 'chapter_complete');
+        advanceAfterWave(state);
       }
+      break;
+    case 'perk_draft':
+      if (after(t, PHASE_TIME.draftAuto)) choosePerk(state, 0);
       break;
     case 'chapter_complete':
       if (after(t, PHASE_TIME.chapterComplete) || (input.skip && after(t, PHASE_TIME.chapterCompleteSkippableAfter))) {
@@ -210,18 +236,57 @@ export function updatePhase(state: GameState, input: InputFrame, dt: number): vo
         state.chapter += 1;
         state.wave = 1;
         state.chapterStats = emptyStats();
+        const p = state.player;
+        if (state.mods.shieldPerChapter > 0) p.shield = Math.min(MAX_SHIELD, p.shield + state.mods.shieldPerChapter);
         beginWave(state);
       }
       break;
   }
 }
 
+/** Next wave, or the chapter tally after the chapter's last wave. */
+function advanceAfterWave(state: GameState): void {
+  if (state.wave < wavesInChapter(state)) {
+    state.wave += 1;
+    beginWave(state);
+  } else {
+    const bonus = computeChapterBonus(state);
+    state.lastChapterBonus = bonus;
+    addScore(state, bonus.total);
+    emit(state, { type: 'chapter_complete', chapter: state.chapter, bonus });
+    setPhase(state, 'chapter_complete');
+  }
+}
+
+/**
+ * Perk draft choice (called by the app when the player picks a card, or by the auto timeout).
+ * Applies perk `index` and continues the run. No-op outside the perk_draft phase.
+ */
+export function choosePerk(state: GameState, index: number): void {
+  if (state.phase !== 'perk_draft') return;
+  applyDraftChoice(state, index);
+  advanceAfterWave(state);
+}
+
 function updateHazards(state: GameState, dt: number): void {
+  const p = state.player;
   for (const h of state.hazards) {
     if (!h.alive) continue;
     h.ttl -= dt;
     if (h.ttl <= 0) h.alive = false;
+    else if (h.kind === 'gravity' && p.alive) pullTowards(p.pos, h.a, h.width, h.power, dt);
   }
+}
+
+/** Gravity well: pull strength falls off linearly to 0 at `radius`; the ship stays inside its movement box. */
+function pullTowards(pos: Vec2, c: Vec2, radius: number, power: number, dt: number): void {
+  const dx = c.x - pos.x;
+  const dy = c.y - pos.y;
+  const d = Math.sqrt(dx * dx + dy * dy);
+  if (d < 1 || d >= radius) return;
+  const step = Math.min(d, power * (1 - d / radius) * dt);
+  pos.x = clamp(pos.x + (dx / d) * step, SHIP_MIN_X, SHIP_MAX_X);
+  pos.y = clamp(pos.y + (dy / d) * step, SHIP_MIN_Y, SHIP_MAX_Y);
 }
 
 function compactList<T extends { alive: boolean }>(list: T[]): void {

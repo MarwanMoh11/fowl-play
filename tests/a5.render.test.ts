@@ -15,7 +15,7 @@ function enemy(over: Partial<Enemy>): Enemy {
   return {
     id: 1, kind: 'chicken_basic', pos: { x: 400, y: 200 }, vel: { x: 0, y: 0 }, radius: 22, hp: 1, maxHp: 1, points: 100,
     eggRate: 0, alive: true, age: 0, hitFlash: 0, invulnerable: false, canDropEggs: false, carries: null, rotation: 0,
-    anim: 0, isBoss: false, behavior: { type: 'none' }, ...over,
+    anim: 0, isBoss: false, behavior: { type: 'none' }, shield: 0, maxShield: 0, skillTimer: 0, skillState: 0, parentId: -1, ...over,
   };
 }
 
@@ -126,13 +126,13 @@ describe('a5 world renderer (mock canvas)', () => {
       s.pickups.push({ id: id++, kind, pos: { x: 200 + (id % 8) * 80, y: 400 }, vel: { x: 0, y: 0 }, radius: 14, age: 0, spin: 1, alive: true });
     }
     const proj = (kind: 'bolt' | 'missile' | 'egg' | 'enemy_shot' | 'boss_egg' | 'feather_knife', owner: 'player' | 'enemy', weapon: 'pulse' | 'neutron' | 'laser' | 'arc' | null) =>
-      s.projectiles.push({ id: id++, kind, owner, weapon, pos: { x: 500 + (id % 6) * 40, y: 450 }, vel: { x: 30, y: -300 }, accel: { x: 0, y: 0 }, maxSpeed: 0, radius: 6, damage: 1, pierceLeft: 1, hitIds: [], ttl: 3, alive: true, rotation: 0 });
+      s.projectiles.push({ id: id++, kind, owner, weapon, pos: { x: 500 + (id % 6) * 40, y: 450 }, vel: { x: 30, y: -300 }, accel: { x: 0, y: 0 }, maxSpeed: 0, radius: 6, damage: 1, pierceLeft: 1, hitIds: [], ttl: 3, alive: true, rotation: 0, homing: 0, targetId: -1, fuse: 0, age: 0 });
     for (const w of ['pulse', 'neutron', 'laser', 'arc'] as const) proj('bolt', 'player', w);
     proj('missile', 'player', null);
     for (const k of ['egg', 'enemy_shot', 'boss_egg', 'feather_knife'] as const) proj(k, 'enemy', null);
-    s.hazards.push({ id: id++, kind: 'telegraph', a: { x: 100, y: 0 }, b: { x: 100, y: 720 }, width: 120, ttl: 1, lethal: false, alive: true, ownerId: 1 });
-    s.hazards.push({ id: id++, kind: 'telegraph', a: { x: 200, y: 0 }, b: { x: 200, y: 720 }, width: 6, ttl: 1, lethal: false, alive: true, ownerId: 1 });
-    s.hazards.push({ id: id++, kind: 'beam', a: { x: 300, y: 0 }, b: { x: 300, y: 720 }, width: 26, ttl: 1, lethal: true, alive: true, ownerId: 1 });
+    s.hazards.push({ id: id++, kind: 'telegraph', a: { x: 100, y: 0 }, b: { x: 100, y: 720 }, width: 120, ttl: 1, lethal: false, alive: true, ownerId: 1, power: 0 });
+    s.hazards.push({ id: id++, kind: 'telegraph', a: { x: 200, y: 0 }, b: { x: 200, y: 720 }, width: 6, ttl: 1, lethal: false, alive: true, ownerId: 1, power: 0 });
+    s.hazards.push({ id: id++, kind: 'beam', a: { x: 300, y: 0 }, b: { x: 300, y: 720 }, width: 26, ttl: 1, lethal: true, alive: true, ownerId: 1, power: 0 });
     s.player.invulnTimer = 2;
     s.time = 5;
     return s;

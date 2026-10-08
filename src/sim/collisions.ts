@@ -1,9 +1,10 @@
-// src/sim/collisions.ts — OWNER: A1. Circle-vs-circle collision resolution (§7.6.4).
+// src/sim/collisions.ts — OWNER: LEAD. Circle-vs-circle collision resolution (§7.6.4).
 import type { GameState, Projectile } from './types';
 import { dist2, segmentCircleHit } from './math';
 import { damageEnemy } from './combat';
 import { collectPickup } from './pickups';
 import { isPlayerVulnerable, killPlayer } from './player';
+import { onBoltHit } from './weapons';
 import { CONTACT_DAMAGE, CONTACT_RADIUS_FACTOR } from './tuning/economy';
 
 function overlaps(ax: number, ay: number, bx: number, by: number, r: number): boolean {
@@ -25,6 +26,7 @@ function boltVsEnemies(state: GameState, bolt: Projectile): void {
     }
     damageEnemy(state, e, bolt.damage, 'bolt');
     bolt.hitIds.push(e.id);
+    onBoltHit(state, bolt, e);
     if (bolt.hitIds.length === 1) {
       state.chapterStats.shotsHit += 1;
       state.runStats.shotsHit += 1;
@@ -82,8 +84,9 @@ export function resolveCollisions(state: GameState): void {
   if (!p.alive) return;
   const pickups = state.pickups;
   const nk = pickups.length;
+  const reach = p.pickupRadius * state.mods.pickupRadiusMul;
   for (let i = 0; i < nk; i++) {
     const k = pickups[i];
-    if (k.alive && overlaps(k.pos.x, k.pos.y, p.pos.x, p.pos.y, p.pickupRadius + k.radius)) collectPickup(state, k);
+    if (k.alive && overlaps(k.pos.x, k.pos.y, p.pos.x, p.pos.y, reach + k.radius)) collectPickup(state, k);
   }
 }

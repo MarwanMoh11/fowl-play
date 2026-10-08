@@ -1,9 +1,10 @@
-// src/sim/waves.ts — OWNER: A3. Wave spawner: groups, delays, carry plan, completion (§7.8, §7.11, §7.12).
+// src/sim/waves.ts — OWNER: H3 (was A3). Wave spawner: groups, delays, carry plan, completion (§7.8, §7.11, §7.12).
 import type { GameState, PickupKind } from './types';
-import { WEAPON_IDS } from './types';
 import type { GroupRuntime, WaveDef, WaveInfo } from './waves.types';
 import { emptyWaveRuntime } from './waves.types';
 import { chapterDisplayName, waveDef } from './chapters';
+import { currentWaveDef } from './modes';
+import { availableWeapons } from './pickups';
 import { rngInt, rngPick } from './rng';
 import { patternPlanned, startPattern, updatePattern } from './patterns';
 import { CARRY, START_DELAY } from './tuning/enemies';
@@ -39,7 +40,7 @@ export function buildCarryPlan(state: GameState, planned: number): { spawnIndex:
     plan.push({ spawnIndex, kind });
   };
   add('power_core');
-  if (CARRY.giftWaves.includes(state.wave)) add(('gift_' + rngPick(state.rng, WEAPON_IDS)) as PickupKind);
+  if (CARRY.giftWaves.includes(state.wave)) add(('gift_' + rngPick(state.rng, availableWeapons(state))) as PickupKind);
   return plan;
 }
 
@@ -50,7 +51,7 @@ function beginGroup(state: GameState, g: GroupRuntime, def: WaveDef): void {
 }
 
 export function startWave(state: GameState): void {
-  const def = waveDef(state.chapter, state.wave);
+  const def = currentWaveDef(state);
   const rt = emptyWaveRuntime();
   state.waveRt = rt;
   let planned = 0;
@@ -68,7 +69,7 @@ export function startWave(state: GameState): void {
 
 export function updateWaveSpawner(state: GameState, dt: number): void {
   const rt = state.waveRt;
-  const def = waveDef(state.chapter, state.wave);
+  const def = currentWaveDef(state);
   rt.elapsed += dt;
   for (const g of rt.groups) {
     if (!g.started) {

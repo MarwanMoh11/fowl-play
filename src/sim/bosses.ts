@@ -1,4 +1,4 @@
-// src/sim/bosses.ts — OWNER: A2. Boss spawning, entry, attack cycle, phases and death (§7.13).
+// src/sim/bosses.ts — OWNER: H2 (was A2). Boss spawning, entry, attack cycle, phases and death (§7.13).
 import type { Enemy, GameState } from './types';
 import type { BossId, BossRuntime } from './bosses.types';
 import { BOSS_INFO } from '../shared/contracts';
@@ -24,6 +24,21 @@ const BEHAVIORS: Record<BossId, BossBehavior> = {
   carrier: carrierBehavior,
   rooster: roosterBehavior,
   dreadnought: dreadnoughtBehavior,
+  // Phase-0 placeholders (H2 replaces each with its own behavior module under bosses/).
+  broodmother: henBehavior,
+  rotisserie: carrierBehavior,
+  colossus: dreadnoughtBehavior,
+  kraken: carrierBehavior,
+  phoenix: roosterBehavior,
+  scrambler: carrierBehavior,
+  empress: dreadnoughtBehavior,
+  mini_brigadier: henBehavior,
+  mini_ace: henBehavior,
+  mini_cuckoo: henBehavior,
+  mini_jelly: henBehavior,
+  mini_stormcrow: henBehavior,
+  mini_scarecrow: henBehavior,
+  mini_guard: henBehavior,
 };
 
 function runtimeOf(e: Enemy): BossRuntime | null {

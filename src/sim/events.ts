@@ -1,5 +1,5 @@
-// src/sim/events.ts — OWNER: A1 — CONTRACT v1
-import type { Vec2, WeaponId, EnemyKind, PickupKind, ChapterBonus, GameState } from './types';
+// src/sim/events.ts — OWNER: LEAD — CONTRACT v2 (HENPOCALYPSE)
+import type { Vec2, WeaponId, EnemyKind, PickupKind, ChapterBonus, GameState, PerkId, PowerupId, ProjectileKind } from './types';
 
 export type GameEvent =
   | { type: 'player_fire'; weapon: WeaponId; power: number; x: number; y: number }
@@ -31,7 +31,33 @@ export type GameEvent =
   | { type: 'chapter_complete'; chapter: number; bonus: ChapterBonus }
   | { type: 'warp_start'; nextChapter: number }
   | { type: 'game_over'; score: number }
-  | { type: 'victory'; score: number };
+  | { type: 'victory'; score: number }
+  // ---- HENPOCALYPSE ----
+  | { type: 'combo'; count: number; mult: number }                 // combo reached a new tier
+  | { type: 'combo_break'; count: number }                          // chain of ≥ COMBO_BREAK_MIN kills ended
+  | { type: 'fury_full' }
+  | { type: 'overdrive_start'; duration: number; x: number; y: number }
+  | { type: 'overdrive_end' }
+  | { type: 'powerup_start'; id: PowerupId; duration: number }
+  | { type: 'powerup_end'; id: PowerupId }
+  | { type: 'shield_absorb'; x: number; y: number; left: number }   // player shield charge popped
+  | { type: 'player_revived'; x: number; y: number; left: number }
+  | { type: 'enemy_shield_hit'; id: number; x: number; y: number }
+  | { type: 'enemy_shield_break'; id: number; x: number; y: number }
+  | { type: 'enemy_teleport'; id: number; fromX: number; fromY: number; x: number; y: number }
+  | { type: 'enemy_cloak'; id: number; x: number; y: number; on: boolean }
+  | { type: 'enemy_heal'; id: number; x: number; y: number; radius: number }
+  | { type: 'pod_hatch'; x: number; y: number }
+  | { type: 'projectile_burst'; kind: ProjectileKind; x: number; y: number } // cluster egg / mine burst
+  | { type: 'golden_appear'; x: number; y: number }
+  | { type: 'golden_escaped' }
+  | { type: 'rail'; x: number; y0: number; y1: number; width: number }     // hitscan rail beam
+  | { type: 'chain_explosion'; x: number; y: number; radius: number }
+  | { type: 'crit'; x: number; y: number }
+  | { type: 'drone_fire'; x: number; y: number }
+  | { type: 'perk_draft'; options: PerkId[] }
+  | { type: 'perk_chosen'; id: PerkId; stacks: number }
+  | { type: 'corn_collected'; amount: number; total: number };
 
 export function emit(state: GameState, e: GameEvent): void {
   state.events.push(e);

@@ -48,11 +48,11 @@ describe('spawnBoss', () => {
   it('HP = round(base × difficulty.bossHp × (1 + 0.25 × loopIndex))', () => {
     const cases: [BossId, Difficulty, number, number][] = [
       ['hen', 'normal', 1, 900], ['hen', 'easy', 1, 675], ['hen', 'hard', 1, 1260],
-      ['hen', 'normal', 6, 1125], ['hen', 'normal', 11, 1350], ['hen', 'hard', 6, 1575],
-      ['carrier', 'normal', 2, 1300], ['carrier', 'easy', 7, Math.round(1300 * 0.75 * 1.25)],
+      ['hen', 'normal', 13, 1125], ['hen', 'normal', 25, 1350], ['hen', 'hard', 13, 1575],
+      ['carrier', 'normal', 2, 1300], ['carrier', 'easy', 14, Math.round(1300 * 0.75 * 1.25)],
       ['rooster', 'hard', 3, Math.round(1700 * 1.4)], ['twin_hens', 'normal', 3, 650],
-      ['dreadnought', 'normal', 5, 3600], ['dreadnought', 'hard', 10, Math.round(3600 * 1.4 * 1.25)],
-      ['dreadnought', 'normal', 15, 3600 * 1.5],
+      ['dreadnought', 'normal', 12, 3600], ['dreadnought', 'hard', 24, Math.round(3600 * 1.4 * 1.25)],
+      ['dreadnought', 'normal', 30, 3600 * 1.5],
     ];
     for (const [id, diff, chapter, hp] of cases) {
       const { bosses } = spawn(id, { difficulty: diff, chapter });
@@ -285,14 +285,14 @@ describe('long fights', () => {
       if (bad) throw new Error(`tick ${i}: ${bad}`);
     }
     expect(bosses.every((b) => b.alive)).toBe(true);
-    const expected: Record<BossId, string[]> = {
+    const expected: Partial<Record<BossId, string[]>> = {
       hen: ['egg_fan', 'egg_rain', 'brood'],
       carrier: ['turret_burst', 'hatch', 'spiral'],
       rooster: ['dive', 'laser_sweep', 'feather_ring'],
       twin_hens: ['egg_fan', 'egg_rain'],
       dreadnought: ['turret_burst', 'hatch', 'spiral', 'egg_fan', 'egg_rain', 'brood', 'laser_sweep', 'feather_ring'],
     };
-    for (const a of expected[id]) expect(seen.has(a), `${id} never ran ${a}`).toBe(true);
+    for (const a of expected[id] ?? []) expect(seen.has(a), `${id} never ran ${a}`).toBe(true);
     expect(s.enemies.length).toBeLessThanOrEqual(400);
     expect(s.projectiles.length).toBeLessThanOrEqual(1500);
     expect(s.hazards.length).toBeLessThanOrEqual(50);

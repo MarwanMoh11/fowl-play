@@ -135,7 +135,7 @@ function spawnTestAsteroid(s: GameState, kind: 'asteroid_l', x: number, y: numbe
   const e: Enemy = {
     id: s.nextId++, kind, pos: { x, y }, vel: { ...v }, radius: 40, hp: 8, maxHp: 8, points: 200, eggRate: 0,
     alive: true, age: 0, hitFlash: 0, invulnerable: false, canDropEggs: false, carries: null, rotation: 0, anim: 0,
-    isBoss: false, behavior: { type: 'drift', spin: 1 },
+    isBoss: false, behavior: { type: 'drift', spin: 1 }, shield: 0, maxShield: 0, skillTimer: 0, skillState: 0, parentId: -1,
   };
   s.enemies.push(e);
   return e;

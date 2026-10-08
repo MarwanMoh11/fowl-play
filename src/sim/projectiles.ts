@@ -1,9 +1,10 @@
-// src/sim/projectiles.ts — OWNER: A2. Projectile spawning and motion (§7.7).
+// src/sim/projectiles.ts — OWNER: H1 (was A2). Projectile spawning and motion (§7.7).
 import type { GameState, Projectile, ProjectileKind, Vec2, WeaponId } from './types';
 import { emit } from './events';
 import { newId } from './ids';
 import { DIFFICULTY } from './difficulty';
 import { detonateMissile } from './missile';
+import { enemyTimeScale } from './powerups';
 import { GROUND_Y, MAX_PROJECTILES } from './tuning/core';
 import {
   BOLT_MAX_X, BOLT_MIN_X, BOLT_MIN_Y, EGG, ENEMY_PROJECTILE_BOUNDS, MISSILE, PROJECTILE_DEFS,
@@ -31,21 +32,26 @@ export interface ProjectileInit {
   ttl?: number;
   weapon?: WeaponId | null;
   rotation?: number;
+  homing?: number;         // turn rate rad/s (default 0)
+  targetId?: number;       // default -1
+  fuse?: number;           // default 0
 }
 
 export function spawnProjectile(state: GameState, init: ProjectileInit): Projectile | null {
   if (state.projectiles.length >= MAX_PROJECTILES) return null;
   const def = PROJECTILE_DEFS[init.kind];
   const isEgg = init.kind === 'egg';
+  // Mutators/perks scale every enemy projectile's speed in one place.
+  const sm = init.owner === 'enemy' ? state.mods.enemyShotSpeedMul : 1;
   const p: Projectile = {
     id: newId(state),
     kind: init.kind,
     owner: init.owner,
     weapon: init.weapon ?? null,
     pos: { x: init.x, y: init.y },
-    vel: { x: init.vx, y: init.vy },
+    vel: { x: init.vx * sm, y: init.vy * sm },
     accel: { x: init.ax ?? def.ax, y: init.ay ?? def.ay },
-    maxSpeed: init.maxSpeed ?? (isEgg ? EGG.maxSpeed * DIFFICULTY[state.difficulty].eggSpeed : 0),
+    maxSpeed: (init.maxSpeed ?? (isEgg ? EGG.maxSpeed * DIFFICULTY[state.difficulty].eggSpeed : 0)) * sm,
     radius: init.radius ?? def.radius,
     damage: init.damage ?? def.damage,
     pierceLeft: init.pierce ?? def.pierce,
@@ -53,6 +59,10 @@ export function spawnProjectile(state: GameState, init: ProjectileInit): Project
     ttl: init.ttl ?? def.ttl,
     alive: true,
     rotation: init.rotation ?? (def.rotateWithVelocity ? Math.atan2(init.vy, init.vx) + Math.PI / 2 : 0),
+    homing: init.homing ?? 0,
+    targetId: init.targetId ?? -1,
+    fuse: init.fuse ?? 0,
+    age: 0,
   };
   state.projectiles.push(p);
   return p;
@@ -65,12 +75,15 @@ function offScreen(p: Projectile): boolean {
   return x < b.minX || x > b.maxX || y < b.minY || y > b.maxY;
 }
 
-export function updateProjectiles(state: GameState, dt: number): void {
+export function updateProjectiles(state: GameState, frameDt: number): void {
   const list = state.projectiles;
   const n = list.length;
+  const enemyScale = enemyTimeScale(state);
   for (let i = 0; i < n; i++) {
     const p = list[i];
     if (!p.alive) continue;
+    const dt = p.owner === 'enemy' ? frameDt * enemyScale : frameDt; // time warp slows enemy fire
+    p.age += dt;
     p.vel.x += p.accel.x * dt;
     p.vel.y += p.accel.y * dt;
     if (p.maxSpeed > 0) {

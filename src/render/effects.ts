@@ -30,6 +30,10 @@ const PICKUP_COLOR: Record<PickupKind, string> = {
   drumstick: '#FFB35C', roast: '#FFB35C', power_core: '#39FF88',
   gift_pulse: WEAPON_INFO.pulse.color, gift_neutron: WEAPON_INFO.neutron.color,
   gift_laser: WEAPON_INFO.laser.color, gift_arc: WEAPON_INFO.arc.color,
+  gift_flak: WEAPON_INFO.flak.color, gift_flame: WEAPON_INFO.flame.color, gift_sickle: WEAPON_INFO.sickle.color,
+  gift_homing: WEAPON_INFO.homing.color, gift_rail: WEAPON_INFO.rail.color, gift_prism: WEAPON_INFO.prism.color,
+  pu_shield: '#4361EE', pu_magnet: '#E63946', pu_rapid: '#FFD60A', pu_drones: '#8FE3FF', pu_timewarp: '#9B5DE5',
+  pu_double: '#FFC93C', life_up: '#FF3B3B', golden_egg: '#FFC93C', corn: '#FFD93B',
 };
 
 export interface ArcBolt { ttl: number; n: number; xs: Float32Array; ys: Float32Array }

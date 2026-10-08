@@ -1,4 +1,4 @@
-// src/sim/tuning/enemies.ts — OWNER: A3. Enemy table and pattern constants (§7.6, §7.11).
+// src/sim/tuning/enemies.ts — OWNER: H3 (was A3). Enemy table and pattern constants (§7.6, §7.11).
 import type { EnemyKind, PickupKind } from '../types';
 
 export interface EnemyDef {
@@ -27,6 +27,38 @@ export const ENEMY_BASE: Record<EnemyKind, EnemyDef> = {
   boss_carrier:    { radius: 105, hp: 1300, points: 15000, ...NO_FOOD },
   boss_rooster:    { radius: 85, hp: 1700, points: 20000, ...NO_FOOD },
   boss_dreadnought: { radius: 130, hp: 3600, points: 50000, ...NO_FOOD },
+  // ---- HENPOCALYPSE armada: Phase-0 placeholder numbers (H3 tunes; see docs/HENPOCALYPSE.md §H3) ----
+  chicken_ninja:   { radius: 22, hp: 3, points: 350, eggRate: 0.05, food: 'drumstick', foodChance: 1, splitInto: null },
+  chicken_bomber:  { radius: 26, hp: 4, points: 400, eggRate: 0, food: 'drumstick', foodChance: 1, splitInto: null },
+  egg_pod:         { radius: 20, hp: 6, points: 300, ...NO_FOOD },
+  chicken_jet:     { radius: 22, hp: 2, points: 300, eggRate: 0, food: 'drumstick', foodChance: 1, splitInto: null },
+  chicken_turret:  { radius: 28, hp: 10, points: 600, eggRate: 0, food: 'roast', foodChance: 1, splitInto: null },
+  chicken_shield:  { radius: 26, hp: 4, points: 500, eggRate: 0.06, food: 'roast', foodChance: 1, splitInto: null },
+  chicken_mech:    { radius: 34, hp: 20, points: 1000, eggRate: 0, food: 'roast', foodChance: 1, splitInto: null },
+  space_mine:      { radius: 18, hp: 3, points: 150, ...NO_FOOD },
+  chicken_ghost:   { radius: 24, hp: 4, points: 450, eggRate: 0.06, food: 'drumstick', foodChance: 1, splitInto: null },
+  chicken_healer:  { radius: 24, hp: 5, points: 600, eggRate: 0.03, food: 'roast', foodChance: 1, splitInto: null },
+  chicken_sniper:  { radius: 24, hp: 4, points: 550, eggRate: 0, food: 'drumstick', foodChance: 1, splitInto: null },
+  chicken_mother:  { radius: 36, hp: 15, points: 900, eggRate: 0.04, food: 'roast', foodChance: 1, splitInto: null },
+  chicken_void:    { radius: 26, hp: 6, points: 700, eggRate: 0, food: 'roast', foodChance: 1, splitInto: null },
+  chicken_gold:    { radius: 26, hp: 8, points: 5000, ...NO_FOOD },
+  chicken_elite:   { radius: 30, hp: 14, points: 1200, eggRate: 0.06, food: 'roast', foodChance: 1, splitInto: null },
+  comet:           { radius: 20, hp: 2, points: 150, ...NO_FOOD },
+  // HENPOCALYPSE bosses: base values only; H2 overrides hp/points/radius from tuning/bosses.ts.
+  boss_broodmother: { radius: 120, hp: 4200, points: 60000, ...NO_FOOD },
+  boss_rotisserie:  { radius: 130, hp: 4800, points: 70000, ...NO_FOOD },
+  boss_colossus:    { radius: 140, hp: 5600, points: 80000, ...NO_FOOD },
+  boss_kraken:      { radius: 135, hp: 6000, points: 90000, ...NO_FOOD },
+  boss_phoenix:     { radius: 115, hp: 6400, points: 100000, ...NO_FOOD },
+  boss_scrambler:   { radius: 130, hp: 7200, points: 120000, ...NO_FOOD },
+  boss_empress:     { radius: 150, hp: 9000, points: 250000, ...NO_FOOD },
+  boss_mini_brigadier: { radius: 70, hp: 900, points: 15000, ...NO_FOOD },
+  boss_mini_ace:       { radius: 70, hp: 1000, points: 16000, ...NO_FOOD },
+  boss_mini_cuckoo:    { radius: 72, hp: 1100, points: 17000, ...NO_FOOD },
+  boss_mini_jelly:     { radius: 72, hp: 1200, points: 18000, ...NO_FOOD },
+  boss_mini_stormcrow: { radius: 70, hp: 1300, points: 19000, ...NO_FOOD },
+  boss_mini_scarecrow: { radius: 72, hp: 1400, points: 20000, ...NO_FOOD },
+  boss_mini_guard:     { radius: 74, hp: 1600, points: 22000, ...NO_FOOD },
 };
 
 /** Kind letters used by the chapter tables (§7.11). */

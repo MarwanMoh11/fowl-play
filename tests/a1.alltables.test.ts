@@ -4,7 +4,7 @@ import { createGame, NEUTRAL_INPUT, step } from '../src/sim/game';
 import { applyDebug } from '../src/sim/debug';
 import { waveInfo } from '../src/sim/waves';
 import type { InputFrame } from '../src/sim/types';
-import { DT } from '../src/sim/tuning/core';
+import { FINAL_CHAPTER, DT } from '../src/sim/tuning/core';
 import { checkInvariants } from './a1.invariants';
 
 const SPAWN_WITHIN_TICKS = 600;
@@ -57,7 +57,7 @@ describe('all tables', () => {
       victories += s.events.filter((e) => e.type === 'victory').length;
     }
     expect(s.phase).toBe('victory');
-    expect(s.chapter).toBe(5);
+    expect(s.chapter).toBe(FINAL_CHAPTER);
     for (let t = 0; t < 600; t++) {
       step(s, skip, DT);
       victories += s.events.filter((e) => e.type === 'victory').length;

@@ -4,6 +4,7 @@ import type {
   AsteroidsSpec, ChapterDef, GridParams, GroupSpec, KindCounts, KindLetter, RingDef, WaveDef,
 } from './waves.types';
 import { FINAL_CHAPTER, WAVES_PER_CHAPTER } from './tuning/core';
+import { HENPOCALYPSE_CHAPTERS } from './chapters2';
 
 // ---- tiny builders keep the tables readable ----
 type GridOpts = Partial<Omit<GridParams, 'rowKinds' | 'cols'>>;
@@ -26,7 +27,8 @@ const boss = (id: BossId): GroupSpec => ({ pattern: 'boss', boss: id });
 const w = (name: string, ...groups: GroupSpec[]): WaveDef => ({ name, groups });
 const later = (g: GroupSpec, delay: number): GroupSpec => ({ ...g, delay });
 
-export const CHAPTERS: readonly ChapterDef[] = [
+/** Classic chapters 1–5 (v1). */
+export const CLASSIC_CHAPTERS_DEFS: readonly ChapterDef[] = [
   {
     name: 'Low Orbit', palette: ['#0B0B2B', '#2A1B5C'],
     waves: [
@@ -104,6 +106,9 @@ export const CHAPTERS: readonly ChapterDef[] = [
   },
 ];
 
+/** Campaign: classic 1–5 followed by HENPOCALYPSE 6–12 (chapters2.ts). */
+export const CHAPTERS: readonly ChapterDef[] = [...CLASSIC_CHAPTERS_DEFS, ...HENPOCALYPSE_CHAPTERS];
+
 const ROMAN: readonly (readonly [number, string])[] = [
   [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'],
   [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
@@ -121,7 +126,7 @@ export function toRoman(n: number): string {
   return out;
 }
 
-/** Table index (0-based) a chapter number maps to; chapters beyond 5 loop. */
+/** Table index (0-based) a chapter number maps to; chapters beyond FINAL_CHAPTER loop. */
 export function baseChapterIndex(chapter: number): number {
   return (Math.max(1, Math.floor(chapter)) - 1) % FINAL_CHAPTER;
 }

@@ -1,6 +1,6 @@
 // tests/a4.ui.test.ts — OWNER: A4. Menu navigation logic and screen data, without a DOM (§9.A4).
 import { describe, expect, it } from 'vitest';
-import type { AudioSystem, UiSound } from '../src/shared/contracts';
+import type { AudioSystem, RunSummary, UiSound } from '../src/shared/contracts';
 import { createMenu } from '../src/ui/menu';
 import { cycleOption, firstEnabled, keyToAction, moveFocus, snapValue, stepValue } from '../src/ui/nav';
 import { CONTROL_ROWS, PICKUP_ROWS, TIPS } from '../src/ui/screens/howto';
@@ -193,6 +193,7 @@ describe('screen data', () => {
     expect(PICKUP_ROWS.map((r) => r.key)).toEqual([
       'pickup_drumstick', 'pickup_roast', 'pickup_power_core',
       'pickup_gift_pulse', 'pickup_gift_neutron', 'pickup_gift_laser', 'pickup_gift_arc',
+      'pickup_gift_flak', 'pickup_gift_flame', 'pickup_gift_sickle', 'pickup_gift_homing', 'pickup_gift_rail', 'pickup_gift_prism',
     ]);
     expect(PICKUP_ROWS[3].name).toContain('PULSE BLASTER');
     expect(PICKUP_ROWS[6].desc).toContain('Lightning');
@@ -206,7 +207,10 @@ describe('screen data', () => {
   });
 
   it('end screens, dates and title text', () => {
-    const base = { score: 1, chapter: 1, wave: 1, difficulty: 'normal', accuracyPct: 0, kills: 0 } as const;
+    const base: Omit<RunSummary, 'victory'> = {
+      score: 1, chapter: 1, wave: 1, difficulty: 'normal', accuracyPct: 0, kills: 0, mode: 'campaign', ship: 'falcon',
+      mutators: [], perks: [], corn: 0, bossesKilled: 0, maxCombo: 0, goldenKills: 0, seed: 0, dailyDate: 0,
+    };
     expect(endTitle({ ...base, victory: true })).toBe('COOP LIBERATED!');
     expect(endTitle({ ...base, victory: false })).toBe('GAME OVER');
     expect(formatDate('2026-03-04T10:00:00.000Z')).toBe('2026-03-04');

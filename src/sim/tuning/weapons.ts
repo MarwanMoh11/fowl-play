@@ -1,4 +1,4 @@
-// src/sim/tuning/weapons.ts — OWNER: A2. Player, weapon, heat, missile and projectile numbers (§7.3–§7.7).
+// src/sim/tuning/weapons.ts — OWNER: H1 (was A2). Player, weapon, heat, missile and projectile numbers (§7.3–§7.7).
 import type { ProjectileKind, WeaponId } from '../types';
 
 /** Ship (§7.3). */
@@ -72,11 +72,14 @@ export const ARC = {
   levels: lv<ArcLevel>(11, (i) => ({ targets: ARC_TARGETS[i], damage: ARC_DAMAGE[i] })),
 } as const;
 
+// Phase-0 placeholders for the six HENPOCALYPSE weapons (H1 replaces with real tables).
 export const WEAPON_RATE: Record<WeaponId, number> = {
   pulse: PULSE.rate, neutron: NEUTRON.rate, laser: LASER.rate, arc: ARC.rate,
+  flak: PULSE.rate, flame: PULSE.rate, sickle: PULSE.rate, homing: PULSE.rate, rail: PULSE.rate, prism: PULSE.rate,
 };
 export const WEAPON_HEAT: Record<WeaponId, number> = {
   pulse: PULSE.heat, neutron: NEUTRON.heat, laser: LASER.heat, arc: ARC.heat,
+  flak: PULSE.heat, flame: PULSE.heat, sickle: PULSE.heat, homing: PULSE.heat, rail: PULSE.heat, prism: PULSE.heat,
 };
 
 /** Missile (§7.5). */
@@ -108,6 +111,11 @@ export const PROJECTILE_DEFS: Record<ProjectileKind, ProjectileDef> = {
   enemy_shot:    { radius: 7,  ttl: 6,  damage: 1, pierce: 0, ax: 0, ay: 0, rotateWithVelocity: false },
   boss_egg:      { radius: 10, ttl: 6,  damage: 1, pierce: 0, ax: 0, ay: 0, rotateWithVelocity: false },
   feather_knife: { radius: 8,  ttl: 6,  damage: 1, pierce: 0, ax: 0, ay: 0, rotateWithVelocity: true },
+  cluster_egg:   { radius: 10, ttl: 12, damage: 1, pierce: 0, ax: 0, ay: 300, rotateWithVelocity: false },
+  shard:         { radius: 5,  ttl: 5,  damage: 1, pierce: 0, ax: 0, ay: 0, rotateWithVelocity: true },
+  void_orb:      { radius: 11, ttl: 7,  damage: 1, pierce: 0, ax: 0, ay: 0, rotateWithVelocity: false },
+  fireball:      { radius: 14, ttl: 7,  damage: 1, pierce: 0, ax: 0, ay: 0, rotateWithVelocity: true },
+  gear:          { radius: 12, ttl: 7,  damage: 1, pierce: 0, ax: 0, ay: 0, rotateWithVelocity: false },
 };
 
 export const EGG = { startVy: 60, maxSpeed: 420, spawnOffsetFactor: 0.6 } as const;

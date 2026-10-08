@@ -1,5 +1,7 @@
-// src/app/params.ts — OWNER: A1. URL parameters (§7.15).
-import type { Difficulty } from '../sim/types';
+// src/app/params.ts — OWNER: LEAD. URL parameters (§7.15, HENPOCALYPSE debug).
+import type { Difficulty, GameMode, MutatorId, ShipId } from '../sim/types';
+import { GAME_MODES, SHIP_IDS } from '../sim/types';
+import { MUTATORS } from '../sim/tuning/loadout';
 
 export interface UrlParams {
   debug: boolean;
@@ -9,6 +11,10 @@ export interface UrlParams {
   wave: number | null;
   god: boolean;
   gallery: boolean;
+  /** Debug only: start straight into a mode / ship / mutator set (with chapter or wave). */
+  mode: GameMode | null;
+  ship: ShipId | null;
+  mutators: MutatorId[];
 }
 
 function intParam(q: URLSearchParams, key: string, min: number, max: number): number | null {
@@ -32,5 +38,8 @@ export function parseParams(search: string): UrlParams {
     wave: intParam(q, 'wave', 1, 10),
     god: q.get('god') === '1',
     gallery: q.get('gallery') === '1',
+    mode: (GAME_MODES as readonly string[]).includes(q.get('mode') ?? '') ? (q.get('mode') as GameMode) : null,
+    ship: (SHIP_IDS as readonly string[]).includes(q.get('ship') ?? '') ? (q.get('ship') as ShipId) : null,
+    mutators: (q.get('mutators') ?? '').split(',').filter((m): m is MutatorId => m in MUTATORS),
   };
 }

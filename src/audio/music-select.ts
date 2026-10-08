@@ -21,6 +21,7 @@ export function chooseTrack(screen: AppScreen, state: GameState | null): TrackNa
     case 'victory': return 'victory';
     case 'gameover': return 'gameover';
     case 'paused': return undefined;
+    case 'draft': return undefined;
     case 'playing':
       if (!state) return null;
       return state.phase === 'boss_intro' || bossAlive(state) ? 'boss' : 'game';

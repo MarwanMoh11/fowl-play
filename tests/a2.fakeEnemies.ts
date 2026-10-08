@@ -8,7 +8,7 @@ import { MAX_ENEMIES } from '../src/sim/tuning/core';
 interface FakeDef { radius: number; hp: number; points: number; eggRate: number; food: 'drumstick' | 'roast' | null; foodChance: number }
 const BOSS: FakeDef = { radius: 100, hp: 1000, points: 10000, eggRate: 0, food: null, foodChance: 0 };
 
-export const ENEMY_DEFS: Record<EnemyKind, FakeDef> = {
+const KNOWN: Partial<Record<EnemyKind, FakeDef>> = {
   chicken_basic:   { radius: 22, hp: 1, points: 100, eggRate: 0.05, food: 'drumstick', foodChance: 1 },
   chicken_red:     { radius: 24, hp: 3, points: 250, eggRate: 0.07, food: 'drumstick', foodChance: 1 },
   chicken_armored: { radius: 26, hp: 7, points: 500, eggRate: 0.08, food: 'roast', foodChance: 1 },
@@ -19,6 +19,11 @@ export const ENEMY_DEFS: Record<EnemyKind, FakeDef> = {
   asteroid_s:      { radius: 14, hp: 1, points: 50, eggRate: 0, food: null, foodChance: 0 },
   boss_hen: BOSS, boss_carrier: BOSS, boss_rooster: BOSS, boss_dreadnought: BOSS,
 };
+const OTHER: FakeDef = { radius: 24, hp: 3, points: 300, eggRate: 0, food: null, foodChance: 0 };
+/** Every EnemyKind: the v1 table above, any other boss_* → BOSS, the rest → OTHER. */
+export const ENEMY_DEFS = new Proxy(KNOWN, {
+  get: (t, k: string) => t[k as EnemyKind] ?? (k.startsWith('boss_') ? BOSS : OTHER),
+}) as Record<EnemyKind, FakeDef>;
 
 /** The test sets hooks.updateBoss after importing the real bosses module (avoids an import cycle in the mock). */
 export const hooks: { updateBoss: ((s: GameState, e: Enemy, dt: number) => void) | null } = { updateBoss: null };
@@ -31,6 +36,7 @@ export function spawnEnemy(state: GameState, kind: EnemyKind, x: number, y: numb
     id: newId(state), kind, pos: { x, y }, vel: { x: 0, y: 0 }, radius: d.radius, hp: d.hp, maxHp: d.hp,
     points: d.points, eggRate: d.eggRate, alive: true, age: 0, hitFlash: 0, invulnerable: false,
     canDropEggs: true, carries: null, rotation: 0, anim: 0, isBoss: kind.startsWith('boss_'), behavior,
+    shield: 0, maxShield: 0, skillTimer: 0, skillState: 0, parentId: -1,
   };
   state.enemies.push(e);
   return e;

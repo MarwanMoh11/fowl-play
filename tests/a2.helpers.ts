@@ -41,7 +41,7 @@ export function addEnemy(s: GameState, over: Partial<Enemy> = {}): Enemy {
   const e: Enemy = {
     id: newId(s), kind: 'chicken_basic', pos: { x: 640, y: 200 }, vel: { x: 0, y: 0 }, radius: 22,
     hp: 1, maxHp: 1, points: 100, eggRate: 0, alive: true, age: 0, hitFlash: 0, invulnerable: false,
-    canDropEggs: false, carries: null, rotation: 0, anim: 0, isBoss: false, behavior: { type: 'none' }, ...over,
+    canDropEggs: false, carries: null, rotation: 0, anim: 0, isBoss: false, behavior: { type: 'none' }, shield: 0, maxShield: 0, skillTimer: 0, skillState: 0, parentId: -1, ...over,
   };
   s.enemies.push(e);
   return e;

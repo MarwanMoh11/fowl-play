@@ -84,7 +84,7 @@ export function addHazard(
   if (state.hazards.length >= MAX_HAZARDS) return null;
   const h: Hazard = {
     id: newId(state), kind, a: { x: a.x, y: a.y }, b: { x: b.x, y: b.y }, width, ttl,
-    lethal: kind === 'beam', alive: true, ownerId: e.id,
+    lethal: kind === 'beam', alive: true, ownerId: e.id, power: 0,
   };
   state.hazards.push(h);
   if (kind === 'telegraph') emit(state, { type: 'telegraph', x: a.x, y: a.y });

@@ -11,6 +11,7 @@ const UP = new Set(['ArrowUp', 'KeyW']);
 const DOWN = new Set(['ArrowDown', 'KeyS']);
 const FIRE = new Set(['Space', 'KeyZ', 'KeyJ']);
 const MISSILE = new Set(['KeyX', 'KeyK']);
+const OVERDRIVE = new Set(['KeyC', 'KeyL', 'ShiftLeft', 'ShiftRight']);
 const CONFIRM = new Set(['Enter', 'NumpadEnter', 'Space']);
 const GAME_KEYS = new Set([...LEFT, ...RIGHT, ...UP, ...DOWN, ...FIRE, ...MISSILE]);
 
@@ -31,6 +32,7 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
   const held = new Set<string>();
   let mouseFire = false;
   let missileLatch = false;
+  let overdriveLatch = false;
   let skipLatch = false;
   let capture = false;
   let pointerActive = false;
@@ -52,6 +54,7 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
     }
     if (e.repeat) return;
     if (MISSILE.has(e.code)) missileLatch = true;
+    if (OVERDRIVE.has(e.code)) overdriveLatch = true;
     if (CONFIRM.has(e.code)) skipLatch = true;
   });
   window.addEventListener('keyup', (e) => {
@@ -77,6 +80,9 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
       skipLatch = true;
     } else if (e.button === 2) {
       missileLatch = true;
+    } else if (e.button === 1) {
+      e.preventDefault(); // no autoscroll
+      overdriveLatch = true;
     }
   });
   window.addEventListener('mouseup', (e) => {
@@ -96,9 +102,11 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
         fire: settings.autoFire || mouseFire || anyHeld(FIRE),
         missile: missileLatch,
         skip: skipLatch,
+        overdrive: overdriveLatch,
       };
       missileLatch = false;
       skipLatch = false;
+      overdriveLatch = false;
       return frame;
     },
     reset(): void {
@@ -106,6 +114,7 @@ export function createInput(canvas: HTMLCanvasElement): InputSystem {
       mouseFire = false;
       missileLatch = false;
       skipLatch = false;
+      overdriveLatch = false;
     },
     setCapture(on: boolean): void {
       capture = on;

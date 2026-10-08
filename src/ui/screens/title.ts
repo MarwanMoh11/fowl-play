@@ -1,5 +1,6 @@
 // src/ui/screens/title.ts — OWNER: A4. Title screen (§8.7).
 import type { Difficulty } from '../../sim/types';
+import { DEFAULT_LOADOUT } from '../../sim/mods';
 import { createMenu } from '../menu';
 import { buttonItem, h, selectorItem } from '../widgets';
 import { buildCredits } from './credits';
@@ -31,7 +32,7 @@ export function buildTitle(host: Host): Screen {
   const el = h('div', 'fp-screen fp-title');
   const toTitle = (): void => host.show(buildTitle(host));
   const items = [
-    buttonItem('PLAY', () => host.cb.onStart(host.settings().difficulty)),
+    buttonItem('PLAY', () => host.cb.onStart({ difficulty: host.settings().difficulty, mode: 'campaign', loadout: DEFAULT_LOADOUT })),
     selectorItem('DIFFICULTY', DIFFICULTY_OPTIONS, host.settings().difficulty, (difficulty) => host.update({ difficulty })),
     buttonItem('HIGH SCORES', () => host.show(buildScores(host, toTitle))),
     buttonItem('SETTINGS', () => host.show(buildSettings(host, toTitle))),

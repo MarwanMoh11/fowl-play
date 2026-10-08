@@ -1,5 +1,5 @@
-// src/sim/weapons.ts — OWNER: A2. Firing loop, heat, four weapons, power and gifts (§7.4).
-import type { Enemy, GameState, InputFrame, Vec2, WeaponId } from './types';
+// src/sim/weapons.ts — OWNER: H1 (was A2). Firing loop, heat, ten weapons, power and gifts (§7.4, HENPOCALYPSE §H1).
+import type { Enemy, GameState, InputFrame, Projectile, Vec2, WeaponId } from './types';
 import { emit } from './events';
 import { canFire } from './game';
 import { damageEnemy } from './combat';
@@ -128,6 +128,15 @@ function fireVolley(state: GameState): void {
     case 'arc':
       hit = arcVolley(state, nose, lvl);
       break;
+    default: {
+      // Phase-0 placeholder: the six new weapons fire a pulse fan with their own weapon id (H1 replaces).
+      const d = PULSE.levels[lvl];
+      fired = 0;
+      for (let i = 0; i < d.bolts; i++) {
+        const off = d.bolts === 1 ? 0 : -d.spread / 2 + (i * d.spread) / (d.bolts - 1);
+        fired += spawnBolt(state, p.weapon, nose.x, nose.y, UP + deg(off), PULSE.speed, PULSE.radius, d.damage, PULSE.pierce);
+      }
+    }
   }
   state.chapterStats.shotsFired += fired;
   state.runStats.shotsFired += fired;
@@ -179,4 +188,9 @@ export function applyWeaponGift(state: GameState, weapon: WeaponId): void {
   } else {
     addPower(state, 1);
   }
+}
+
+/** Called by collisions after a player bolt damaged `enemy` (prism shards, crit effects…). Phase 0: no-op. */
+export function onBoltHit(state: GameState, bolt: Projectile, enemy: Enemy): void {
+  void state; void bolt; void enemy;
 }

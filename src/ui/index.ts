@@ -1,5 +1,8 @@
 // src/ui/index.ts — OWNER: A4. DOM menus in #ui (§8.7): title, pause, game over, victory and their sub-screens.
 import type { RunSummary, Settings, UI, UICallbacks, UIDeps } from '../shared/contracts';
+import type { GameState } from '../sim/types';
+import type { GameEvent } from '../sim/events';
+import { buildDraft } from './screens/draft';
 import { buildEnd } from './screens/end';
 import type { Host, Screen } from './screens/host';
 import { buildPause } from './screens/pause';
@@ -55,6 +58,12 @@ export function createUI(root: HTMLElement, cb: UICallbacks, deps: UIDeps): UI {
     },
     showVictory(summary: RunSummary): void {
       host.show(buildEnd(host, summary));
+    },
+    showDraft(state: GameState): void {
+      host.show(buildDraft(host, state));
+    },
+    trackEvents(events: readonly GameEvent[], state: GameState): void {
+      void events; void state; // Phase 0: H4 adds achievements, toasts and codex tracking.
     },
     hide(): void {
       open = false;

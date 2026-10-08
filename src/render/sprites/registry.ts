@@ -1,4 +1,4 @@
-// src/render/sprites/registry.ts — OWNER: A5. Canvas-free sprite registry: key -> size, frames, draw fn.
+// src/render/sprites/registry.ts — OWNER: H5 (was A5). Canvas-free sprite registry: key -> size, frames, draw fn.
 import { SPRITE_KEYS, type SpriteKey } from '../../shared/contracts';
 import { BOSS_SPRITES } from './bosses';
 import { ENEMY_SPRITES } from './enemies';
@@ -9,10 +9,15 @@ import { PROJECTILE_SPRITES } from './projectiles';
 import { SHIP_SPRITES } from './ship';
 import type { SpriteDef } from './types';
 import { WARSHIP_SPRITES } from './warships';
+import { ARSENAL_SPRITES } from './arsenal';
+import { ARMADA_SPRITES } from './armada';
+import { BOSS2_SPRITES } from './bosses2';
+import { LOOT_SPRITES } from './loot';
 
 const ALL: SpriteDef[] = [
   ...SHIP_SPRITES, ...HEN_SPRITES, ...ENEMY_SPRITES, ...BOSS_SPRITES, ...WARSHIP_SPRITES,
   ...PROJECTILE_SPRITES, ...PICKUP_SPRITES, ...FX_SPRITES,
+  ...ARSENAL_SPRITES, ...ARMADA_SPRITES, ...BOSS2_SPRITES, ...LOOT_SPRITES,
 ];
 
 export const SPRITE_REGISTRY: Readonly<Record<SpriteKey, SpriteDef>> = (() => {
