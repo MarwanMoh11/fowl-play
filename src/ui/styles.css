@@ -1,0 +1,11 @@
+/* src/ui/styles.css — OWNER: A4 */
+/* STUB(A1): owner A4 implements (§8.7) */
+.stub-panel {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  gap: 16px; padding-bottom: 180px;
+}
+.stub-btn {
+  font: bold 28px sans-serif; padding: 12px 48px; cursor: pointer;
+  background: #222; color: #fff; border: 2px solid #fff; border-radius: 6px;
+}
