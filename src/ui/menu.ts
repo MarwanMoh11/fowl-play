@@ -26,6 +26,10 @@ export interface Menu {
   handleKey(e: KeyboardEvent): boolean;
 }
 
+/** Clicks closer together than this are one click (see the click handler). Shared by every menu on the page. */
+export const CLICK_GUARD_MS = 300;
+let lastClickAt = Number.NEGATIVE_INFINITY;
+
 export function createMenu(items: readonly MenuItem[], opts: MenuOpts): Menu {
   let index = -1;
   const enabled = (): boolean[] => items.map((it) => !it.disabled);
@@ -62,14 +66,21 @@ export function createMenu(items: readonly MenuItem[], opts: MenuOpts): Menu {
   }
 
   items.forEach((it, i) => {
-    it.el.addEventListener('mouseenter', () => {
-      if (!it.disabled) focus(i);
+    // Touch taps also send mouse-style enter events; hover focus is for mice only, so a tap does not play two sounds.
+    it.el.addEventListener('pointerenter', (e) => {
+      if (e.pointerType === 'mouse' && !it.disabled) focus(i);
     });
     it.el.addEventListener('focus', () => focus(i, true));
     it.el.addEventListener('click', () => {
       opts.audio.unlock();
+      // A double click or double tap sends a second click that lands on the screen the first one rebuilt
+      // (a hangar row bought twice, a score table cleared). One click per CLICK_GUARD_MS.
+      const now = performance.now();
+      if (now - lastClickAt < CLICK_GUARD_MS) return;
+      lastClickAt = now;
       focus(i, true);
-      activate(i);
+      // Clicking a text field only focuses it; its activate() is the save action, which Enter triggers.
+      if (!it.text) activate(i);
     });
   });
 

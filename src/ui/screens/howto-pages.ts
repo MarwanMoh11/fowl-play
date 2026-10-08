@@ -3,8 +3,9 @@ import type { SpriteApi } from '../../shared/contracts';
 import { MODE_INFO } from '../../shared/contracts';
 import { GAME_MODES } from '../../sim/types';
 import { POWERUP_TIME } from '../../sim/tuning/loadout';
+import { isTouchUi } from '../compact';
 import { h } from '../widgets';
-import { CONTROL_ROWS, PICKUP_ROWS, TIPS, preview } from './howto';
+import { CONTROL_ROWS, PICKUP_ROWS, TIPS, TOUCH_CONTROL_ROWS, preview } from './howto';
 
 export const HOW_PAGES = ['CONTROLS', 'PICKUPS', 'POWER-UPS', 'PERKS & MODES'] as const;
 
@@ -23,6 +24,11 @@ export const COMBO_NOTES: readonly string[] = [
   'Fury fills with kills and boss hits. At full fury press C, L or Shift for an overdrive.',
   'Overdrive fires faster and hits harder, and your guns never overheat while it lasts.',
 ];
+
+/** The combo notes, with the overdrive key replaced by the on-screen button on touch screens. */
+export function comboNotes(touch = isTouchUi()): readonly string[] {
+  return touch ? COMBO_NOTES.map((n) => n.replace('press C, L or Shift for an overdrive', 'tap the OVERDRIVE button')) : COMBO_NOTES;
+}
 
 export const PERK_NOTES: readonly string[] = [
   'After a boss or mini-boss, pick one of three perks. Each stack stacks again up to its maximum.',
@@ -44,8 +50,14 @@ function panel(title: string, ...children: HTMLElement[]): HTMLElement {
 
 function controlsPage(): HTMLElement[] {
   const grid = h('div', 'fp-controls');
-  for (const cell of ['', 'MOUSE', 'KEYBOARD']) grid.append(h('span', 'fp-ch', cell));
-  for (const row of CONTROL_ROWS) for (const [i, cell] of row.entries()) grid.append(h('span', i === 0 ? 'fp-cl' : '', cell));
+  if (isTouchUi()) {
+    grid.classList.add('is-touch');
+    for (const cell of ['', 'TOUCH']) grid.append(h('span', 'fp-ch', cell));
+    for (const [action, how] of TOUCH_CONTROL_ROWS) grid.append(h('span', 'fp-cl', action), h('span', '', how));
+  } else {
+    for (const cell of ['', 'MOUSE', 'KEYBOARD']) grid.append(h('span', 'fp-ch', cell));
+    for (const row of CONTROL_ROWS) for (const [i, cell] of row.entries()) grid.append(h('span', i === 0 ? 'fp-cl' : '', cell));
+  }
   return [panel('CONTROLS', grid), panel('TIPS', list(TIPS))];
 }
 
@@ -67,7 +79,7 @@ function powerupsPage(sprites: SpriteApi): HTMLElement[] {
     line.append(preview(sprites, row.key), text);
     return line;
   });
-  return [panel('POWER-UPS', ...rows), panel('COMBOS AND FURY', list(COMBO_NOTES))];
+  return [panel('POWER-UPS', ...rows), panel('COMBOS AND FURY', list(comboNotes()))];
 }
 
 function perksModesPage(): HTMLElement[] {

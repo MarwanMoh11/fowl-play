@@ -1,5 +1,6 @@
 // src/ui/screens/title.ts — OWNER: H4 (from A4). Title screen: PLAY, meta screens, settings and help (§8.7, HENPOCALYPSE §H4 P0-2).
 import { setMenuTrack } from '../../audio/music-select';
+import { isTouchUi } from '../compact';
 import { createMenu } from '../menu';
 import { buttonItem, h } from '../widgets';
 import { buildAchievements } from './achievements-screen';
@@ -17,6 +18,9 @@ export const SUBTITLE = 'HENPOCALYPSE';
 export const TAGLINE = 'Defend the galaxy from the poultry armada';
 export const CONTROLS_SUMMARY =
   'Move: mouse / arrows / WASD  ·  Fire: click / Space / Z  ·  Missile: right-click / X  ·  Pause: Esc / P';
+/** Touch screens: the on-screen buttons replace the keys. Matches the controls on the How to Play page. */
+export const TOUCH_CONTROLS_SUMMARY =
+  'Drag to move  ·  Hold to fire  ·  On-screen buttons: Missile, Overdrive, Pause';
 
 /** Logo with an outline layer under a gradient-filled text layer (text-shadow would show through clipped text). */
 export function buildLogo(): HTMLElement {
@@ -43,7 +47,7 @@ export function buildTitle(host: Host): Screen {
   const list = h('div', 'fp-menu fp-title-menu');
   list.append(...items.map((i) => i.el));
   const footer = h('div', 'fp-footer');
-  footer.append(h('span', '', CONTROLS_SUMMARY), h('span', 'fp-version', GAME_VERSION));
+  footer.append(h('span', '', isTouchUi() ? TOUCH_CONTROLS_SUMMARY : CONTROLS_SUMMARY), h('span', 'fp-version', GAME_VERSION));
   el.append(buildLogo(), h('p', 'fp-subtitle', SUBTITLE), h('p', 'fp-tagline', TAGLINE), list, footer);
   return { el, menu: createMenu(items, { audio: host.audio }) };
 }

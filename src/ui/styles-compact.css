@@ -1,0 +1,163 @@
+/* src/ui/styles-compact.css — OWNER: E. Touch and compact mode. compact.ts puts .fp-compact (small on-screen scale or a
+   coarse pointer) and .fp-touch on #ui and sets --fp-k = 1 / scale. calc(var(--fp-k) * Npx) is N CSS pixels on the
+   phone, whatever the scale. Loaded last, so these rules win over the desktop ones of equal specificity. */
+
+#ui button, #ui input { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.fp-track { touch-action: none; }   /* a slider drags; it must not start a scroll */
+.fp-controls.is-touch { grid-template-columns: 1fr 1.6fr; }
+
+/* Every screen is a scroll area; the back row stays on screen while the list scrolls. */
+.fp-compact .fp-screen {
+  justify-content: flex-start; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  touch-action: pan-y; scrollbar-width: thin;
+  padding: calc(var(--fp-k) * 12px) calc(var(--fp-k) * 16px); gap: calc(var(--fp-k) * 10px);
+}
+.fp-compact .fp-screen:not(.fp-title) > :first-child { margin-top: auto; }
+.fp-compact .fp-screen:not(.fp-title) > :last-child { margin-bottom: auto; }
+.fp-compact .fp-panel {
+  width: 100%; max-width: calc(var(--fp-k) * 640px); box-sizing: border-box;
+  padding: calc(var(--fp-k) * 12px) calc(var(--fp-k) * 14px); border-width: 2px;
+}
+.fp-compact .fp-heading { font-size: calc(var(--fp-k) * 26px); margin: 0 0 calc(var(--fp-k) * 8px); }
+.fp-compact .fp-heading-float { margin: 0; }
+.fp-compact .fp-subheading { font-size: calc(var(--fp-k) * 17px); margin-bottom: calc(var(--fp-k) * 6px); }
+.fp-compact .fp-corn-balance { font-size: calc(var(--fp-k) * 16px); margin-bottom: calc(var(--fp-k) * 6px); }
+.fp-compact .fp-row {
+  position: sticky; bottom: 0; z-index: 2; flex-wrap: wrap; gap: calc(var(--fp-k) * 10px);
+  margin-top: calc(var(--fp-k) * 10px); padding-top: calc(var(--fp-k) * 8px);
+  background: linear-gradient(rgba(16, 10, 40, 0), rgba(16, 10, 40, 0.96) 30%);
+}
+.fp-compact .fp-list { gap: calc(var(--fp-k) * 6px); }
+.fp-compact .fp-menu { margin-top: calc(var(--fp-k) * 8px); gap: calc(var(--fp-k) * 8px); }
+.fp-compact .fp-credit-line { font-size: calc(var(--fp-k) * 15px); margin: calc(var(--fp-k) * 6px) 0; }
+
+/* Tap targets: 44 CSS px high, and the labels scale with them. */
+.fp-compact .fp-btn {
+  width: calc(var(--fp-k) * 300px); max-width: 100%; height: calc(var(--fp-k) * 44px);
+  font-size: calc(var(--fp-k) * 17px); letter-spacing: 0.5px; border-width: 2px; border-radius: calc(var(--fp-k) * 10px);
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.fp-compact .fp-btn.fp-tab { width: auto; min-width: calc(var(--fp-k) * 96px); padding: 0 calc(var(--fp-k) * 10px); font-size: calc(var(--fp-k) * 15px); }
+.fp-compact .fp-settings .fp-btn { width: 100%; max-width: calc(var(--fp-k) * 560px); }
+.fp-compact .fp-title-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--fp-k) * 240px), 1fr)); gap: calc(var(--fp-k) * 8px) calc(var(--fp-k) * 12px); width: min(100%, calc(var(--fp-k) * 640px)); margin-top: calc(var(--fp-k) * 10px); }
+.fp-compact .fp-title-menu .fp-btn { width: 100%; height: calc(var(--fp-k) * 44px); font-size: calc(var(--fp-k) * 16px); }
+.fp-compact .fp-loadout-col .fp-btn { width: 100%; }
+/* BACK stays reachable on the long settings list. */
+.fp-compact .fp-list > .fp-btn:last-child { position: sticky; bottom: 0; z-index: 2; }
+.fp-compact .fp-tab { font-size: calc(var(--fp-k) * 15px); }
+.fp-compact .fp-sel-label { font-size: calc(var(--fp-k) * 15px); }
+.fp-compact .fp-selector .fp-arrow { font-size: calc(var(--fp-k) * 20px); padding: calc(var(--fp-k) * 10px); }
+.fp-compact .fp-sel-value { min-width: calc(var(--fp-k) * 84px); }
+.fp-compact .fp-pill { min-width: calc(var(--fp-k) * 60px); font-size: calc(var(--fp-k) * 14px); padding: 2px calc(var(--fp-k) * 8px); }
+/* The bar is 22 CSS px; transparent top and bottom borders make the drag area 40 CSS px without changing the look. */
+.fp-compact .fp-track {
+  height: calc(var(--fp-k) * 22px); margin: 0 calc(var(--fp-k) * 10px);
+  border: 0 solid transparent; border-width: calc(var(--fp-k) * 9px) 0; background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px #1B1030;
+}
+.fp-compact .fp-readout { width: calc(var(--fp-k) * 40px); font-size: calc(var(--fp-k) * 15px); }
+
+/* Title: logo and menu as a two-column grid, tagline and the keyboard summary replaced. */
+.fp-compact .fp-title { padding-top: calc(var(--fp-k) * 6px); gap: calc(var(--fp-k) * 4px); }
+.fp-compact .fp-logo { font-size: calc(var(--fp-k) * 60px); }
+.fp-compact .fp-subtitle { margin: 0; font-size: calc(var(--fp-k) * 15px); letter-spacing: calc(var(--fp-k) * 4px); }
+.fp-compact .fp-tagline { display: none; }
+.fp-compact .fp-footer { font-size: calc(var(--fp-k) * 12px); bottom: calc(var(--fp-k) * 6px); padding: 0 calc(var(--fp-k) * 16px); gap: calc(var(--fp-k) * 12px); }
+
+/* Mode select: two columns, BACK across both. */
+.fp-compact .fp-mode-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--fp-k) * 260px), 1fr)); gap: calc(var(--fp-k) * 8px); }
+.fp-compact .fp-mode-list > .fp-btn { grid-column: 1 / -1; width: 100%; }
+.fp-compact .fp-card { padding: calc(var(--fp-k) * 10px) calc(var(--fp-k) * 14px); gap: calc(var(--fp-k) * 4px); border-width: 2px; border-radius: calc(var(--fp-k) * 12px); }
+.fp-compact .fp-card-title { font-size: calc(var(--fp-k) * 19px); }
+.fp-compact .fp-card-desc, .fp-compact .fp-card-foot { font-size: calc(var(--fp-k) * 13px); }
+.fp-compact .fp-mode { width: 100%; }
+
+/* Loadout: ship card on top, mutators in two columns. */
+.fp-compact .fp-loadout-cols { flex-direction: column; align-items: stretch; gap: calc(var(--fp-k) * 10px); }
+.fp-compact .fp-loadout-col { width: 100%; gap: calc(var(--fp-k) * 8px); }
+.fp-compact .fp-loadout-col:last-child { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--fp-k) * 240px), 1fr)); gap: calc(var(--fp-k) * 6px); }
+.fp-compact .fp-loadout-col:last-child > .fp-subheading,
+.fp-compact .fp-loadout-col:last-child > .fp-details { grid-column: 1 / -1; }
+.fp-compact .fp-ship-pick { padding: calc(var(--fp-k) * 8px) calc(var(--fp-k) * 12px); }
+.fp-compact .fp-ship-card { grid-template-columns: calc(var(--fp-k) * 72px) 1fr; column-gap: calc(var(--fp-k) * 10px); }
+.fp-compact .fp-ship-art canvas { max-width: calc(var(--fp-k) * 72px); max-height: calc(var(--fp-k) * 72px); }
+.fp-compact .fp-ship-name { font-size: calc(var(--fp-k) * 18px); }
+.fp-compact .fp-ship-status, .fp-compact .fp-ship-desc { font-size: calc(var(--fp-k) * 13px); }
+.fp-compact .fp-bar { grid-template-columns: calc(var(--fp-k) * 88px) 1fr; font-size: calc(var(--fp-k) * 11px); }
+.fp-compact .fp-details { min-height: 0; font-size: calc(var(--fp-k) * 14px); }
+
+/* Draft: the three perks wrap to rows; the text stays. */
+.fp-compact .fp-draft-cards { flex-wrap: wrap; justify-content: center; gap: calc(var(--fp-k) * 8px); width: 100%; }
+.fp-compact .fp-perk { width: calc(var(--fp-k) * 200px); max-width: 100%; min-height: 0; border-width: 3px; }
+.fp-compact .fp-perk-name { font-size: calc(var(--fp-k) * 18px); }
+.fp-compact .fp-perk-desc { font-size: calc(var(--fp-k) * 13px); }
+.fp-compact .fp-perk-key, .fp-compact .fp-perk-rarity, .fp-compact .fp-perk-stacks { font-size: calc(var(--fp-k) * 12px); }
+.fp-compact .fp-draft-hint { font-size: calc(var(--fp-k) * 13px); }
+.fp-compact .fp-chips { max-width: 100%; }
+.fp-compact .fp-chip { font-size: calc(var(--fp-k) * 12px); }
+.fp-compact .fp-run-line { font-size: calc(var(--fp-k) * 13px); }
+.fp-compact .fp-run-lines { margin-top: calc(var(--fp-k) * 8px); }
+
+/* Hangar: ships and upgrades side by side, the one-line detail hidden to save room. */
+.fp-compact .fp-hangar-cols { gap: calc(var(--fp-k) * 10px); }
+.fp-compact .fp-hangar-col { width: auto; flex: 1 1 0; min-width: 0; gap: calc(var(--fp-k) * 6px); }
+.fp-compact .fp-stat-line { font-size: calc(var(--fp-k) * 12px); margin: 0 0 calc(var(--fp-k) * 8px); }
+.fp-compact .fp-row-item {
+  min-height: calc(var(--fp-k) * 44px); padding: calc(var(--fp-k) * 6px) calc(var(--fp-k) * 8px); gap: calc(var(--fp-k) * 8px);
+  border-width: 2px; border-radius: calc(var(--fp-k) * 8px); -webkit-user-select: none; user-select: none;
+}
+.fp-compact .fp-row-art { width: calc(var(--fp-k) * 40px); height: calc(var(--fp-k) * 34px); }
+.fp-compact .fp-row-art canvas { max-width: calc(var(--fp-k) * 38px); max-height: calc(var(--fp-k) * 32px); }
+.fp-compact .fp-row-name { font-size: calc(var(--fp-k) * 15px); }
+.fp-compact .fp-row-sub { display: none; }
+.fp-compact .fp-row-detail { font-size: calc(var(--fp-k) * 13px); }
+
+/* Achievements and codex: one column of achievements, a wrapping grid of codex cards; the screen scrolls. */
+.fp-compact .fp-ach-grid { grid-template-columns: 1fr 1fr; grid-template-rows: none; grid-auto-flow: row; max-height: none; overflow: visible; gap: calc(var(--fp-k) * 6px) calc(var(--fp-k) * 12px); }
+.fp-compact .fp-ach-row { padding: calc(var(--fp-k) * 4px) calc(var(--fp-k) * 8px) calc(var(--fp-k) * 4px) calc(var(--fp-k) * 10px); }
+.fp-compact .fp-ach-tier { width: auto; min-width: calc(var(--fp-k) * 52px); font-size: calc(var(--fp-k) * 11px); }
+.fp-compact .fp-ach-name { font-size: calc(var(--fp-k) * 15px); }
+.fp-compact .fp-ach-desc { font-size: calc(var(--fp-k) * 12px); }
+.fp-compact .fp-ach-date { font-size: calc(var(--fp-k) * 11px); }
+.fp-compact .fp-codex-grid { grid-template-columns: repeat(auto-fill, minmax(calc(var(--fp-k) * 150px), 1fr)); max-height: none; overflow: visible; gap: calc(var(--fp-k) * 6px); }
+.fp-compact .fp-codex-card { padding: calc(var(--fp-k) * 6px); }
+.fp-compact .fp-codex-art { height: calc(var(--fp-k) * 40px); }
+.fp-compact .fp-codex-art canvas { max-width: calc(var(--fp-k) * 44px); max-height: calc(var(--fp-k) * 40px); }
+.fp-compact .fp-codex-name { font-size: calc(var(--fp-k) * 14px); }
+.fp-compact .fp-codex-text { font-size: calc(var(--fp-k) * 12px); }
+
+/* How to play: pages stack, controls keep their two or three columns. */
+.fp-compact .fp-howto-cols { flex-direction: column; align-items: stretch; gap: calc(var(--fp-k) * 10px); }
+.fp-compact .fp-howto-col { width: 100%; padding: calc(var(--fp-k) * 10px) calc(var(--fp-k) * 12px); }
+.fp-compact .fp-controls { font-size: calc(var(--fp-k) * 15px); gap: calc(var(--fp-k) * 8px); }
+.fp-compact .fp-ch { font-size: calc(var(--fp-k) * 12px); }
+.fp-compact .fp-tips { font-size: calc(var(--fp-k) * 15px); padding-left: calc(var(--fp-k) * 18px); }
+.fp-compact .fp-tips li { margin-bottom: calc(var(--fp-k) * 6px); }
+.fp-compact .fp-pickup { gap: calc(var(--fp-k) * 10px); margin-bottom: calc(var(--fp-k) * 6px); }
+.fp-compact .fp-preview { width: calc(var(--fp-k) * 40px); height: calc(var(--fp-k) * 40px); }
+.fp-compact .fp-preview canvas { max-width: calc(var(--fp-k) * 36px); max-height: calc(var(--fp-k) * 36px); }
+.fp-compact .fp-pickup-text b { font-size: calc(var(--fp-k) * 14px); }
+.fp-compact .fp-pickup-text small { font-size: calc(var(--fp-k) * 13px); }
+
+/* Scores: the date column goes, the rest keeps its order. */
+.fp-compact .fp-trow { grid-template-columns: calc(var(--fp-k) * 26px) 1.6fr 1.4fr calc(var(--fp-k) * 34px) 1fr; gap: calc(var(--fp-k) * 6px); padding: calc(var(--fp-k) * 4px) calc(var(--fp-k) * 6px); font-size: calc(var(--fp-k) * 14px); }
+.fp-compact .fp-trow span:nth-child(6) { display: none; }
+.fp-compact .fp-thead { font-size: calc(var(--fp-k) * 11px); }
+.fp-compact .fp-table { min-height: 0; }
+.fp-compact .fp-empty { margin: calc(var(--fp-k) * 16px) 0; font-size: calc(var(--fp-k) * 16px); }
+
+/* Game over, victory and the name field. Keep the field clear of the on-screen keyboard. */
+.fp-compact .fp-end-title { font-size: calc(var(--fp-k) * 34px); }
+.fp-compact .fp-score-label { font-size: calc(var(--fp-k) * 11px); }
+.fp-compact .fp-score { font-size: calc(var(--fp-k) * 40px); }
+.fp-compact .fp-stats { grid-template-columns: repeat(2, 1fr); gap: calc(var(--fp-k) * 6px); margin: calc(var(--fp-k) * 8px) 0 calc(var(--fp-k) * 4px); }
+.fp-compact .fp-stat small { font-size: calc(var(--fp-k) * 11px); }
+.fp-compact .fp-stat b { font-size: calc(var(--fp-k) * 15px); }
+.fp-compact .fp-reward-corn { font-size: calc(var(--fp-k) * 22px); }
+.fp-compact .fp-reward-ach { font-size: calc(var(--fp-k) * 12px); }
+.fp-compact .fp-name-row { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: calc(var(--fp-k) * 6px); margin-top: calc(var(--fp-k) * 8px); }
+.fp-compact .fp-name-label { font-size: calc(var(--fp-k) * 13px); }
+.fp-compact .fp-input { width: 100%; height: calc(var(--fp-k) * 48px); font-size: calc(var(--fp-k) * 20px); letter-spacing: calc(var(--fp-k) * 2px); scroll-margin-top: calc(var(--fp-k) * 16px); }
+.fp-compact .fp-save { width: 100%; }
+.fp-compact .fp-end .fp-trow { font-size: calc(var(--fp-k) * 13px); }
+.fp-compact .fp-end .fp-table { margin-top: calc(var(--fp-k) * 8px); }

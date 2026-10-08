@@ -15,6 +15,16 @@ export const CONTROL_ROWS: readonly (readonly [string, string, string])[] = [
   ['Confirm / skip', 'Left click', 'Enter / Space'],
 ];
 
+/** Touch screens: [action, how on a phone]. Matches TOUCH_CONTROLS_SUMMARY on the title screen. */
+export const TOUCH_CONTROL_ROWS: readonly (readonly [string, string])[] = [
+  ['Move', 'Drag your finger over the play area'],
+  ['Fire (hold)', 'Hold your finger on the play area'],
+  ['Missile', 'MISSILE button'],
+  ['Overdrive (full fury)', 'OVERDRIVE button'],
+  ['Pause', 'PAUSE button'],
+  ['Menus', 'Tap buttons and cards'],
+];
+
 export const TIPS: readonly string[] = [
   'Eggs and chickens destroy your ship',
   'Every 100 food = 1 missile; missiles clear the screen',

@@ -1,6 +1,7 @@
 // src/ui/screens/draft.ts — OWNER: H4. Perk draft: three cards; keys 1/2/3, arrows + Enter, or the mouse (§H4 P0-3).
 import type { GameState, PerkId } from '../../sim/types';
 import { PERKS, type PerkRarity } from '../../sim/tuning/loadout';
+import { isTouchUi } from '../compact';
 import { createMenu, type Menu } from '../menu';
 import { buttonItem, cardButton, cardItem, h, type MenuItem } from '../widgets';
 import type { Host, Screen } from './host';
@@ -66,7 +67,7 @@ export function buildDraft(host: Host, state: GameState): Screen {
   menu = createMenu(cards, { audio: host.audio, canActivate, onKey });
   const row = h('div', 'fp-draft-cards');
   row.append(...cards.map((c) => c.el));
-  const hint = h('p', 'fp-draft-hint', '1 · 2 · 3  or  ← → and Enter  or  click');
+  const hint = h('p', 'fp-draft-hint', isTouchUi() ? 'Tap a card to take that upgrade' : '1 · 2 · 3  or  ← → and Enter  or  click');
   el.append(h('h2', 'fp-heading', DRAFT_TITLE), row, hint, runPerkChips(state));
   return { el, menu };
 }

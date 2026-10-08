@@ -99,7 +99,10 @@
 
 /* Achievements. */
 .fp-ach { width: 1160px; }
-.fp-ach-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(14, auto); grid-auto-flow: column; gap: 4px 22px; }
+.fp-ach-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(14, auto); grid-auto-flow: column; gap: 4px 22px;
+  max-height: 480px; overflow-y: auto; /* 14 rows do not fit the 720 box beside the heading: scroll the list */
+}
 .fp-ach-row { padding: 3px 6px 3px 10px; border-left: 3px solid #6C5CE7; opacity: 0.42; display: flex; flex-direction: column; }
 .fp-ach-row.is-unlocked { opacity: 1; }
 .fp-ach-row.is-bronze { border-color: #E0A46A; }
@@ -115,7 +118,7 @@
 .fp-codex { width: 1180px; }
 .fp-codex-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px;
-  max-height: 430px; overflow: hidden; margin-top: 4px;
+  max-height: 430px; overflow-y: auto; margin-top: 4px; /* 25 enemies and 19 bosses: the rows past 430px scroll */
 }
 .fp-codex-card {
   box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px;

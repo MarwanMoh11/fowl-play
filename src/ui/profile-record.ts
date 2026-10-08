@@ -4,14 +4,19 @@ import type { GameEvent } from '../sim/events';
 import type { GameState } from '../sim/types';
 import { evaluateAchievements, rewardFor, unlockAchievement, type RunFacts } from './achievements';
 import { bossIdOf } from './codex-data';
-import { cornForRun, loadProfile, saveProfile, type Profile, type ProfileStats } from './profile';
+import { CORN_PER_BOSS, loadProfile, saveProfile, type Profile, type ProfileStats } from './profile';
 import type { KV } from './storage';
 
 /** Run counters already added to the profile; the sim's runStats only grow during a run. */
 export interface StatBase { kills: number; bossesKilled: number; goldenKills: number; overdrives: number; foodCollected: number }
 export const ZERO_BASE: Readonly<StatBase> = { kills: 0, bossesKilled: 0, goldenKills: 0, overdrives: 0, foodCollected: 0 };
 
-export interface BankDelta { corn: number; score: number; bosses: number }
+/**
+ * What one bank adds: pickup corn, the whole score blocks gained since the last bank (a difference of
+ * floors, so a run banked in parts pays the same as one banked at once), boss kills, and whether this
+ * is the run's first bank (a run that continues after victory banks again but is still one run).
+ */
+export interface BankDelta { corn: number; scoreBlocks: number; bosses: number; first?: boolean }
 export interface RunReward { cornEarned: number; achievementCorn: number; unlocked: string[] }
 
 function runCounters(st: GameState): StatBase {
@@ -77,14 +82,15 @@ export function applyLive(p: Profile, events: readonly GameEvent[], st: GameStat
 export function bankRun(
   p: Profile, s: RunSummary, delta: BankDelta, facts: RunFacts, pending: readonly string[], date: string,
 ): RunReward {
-  const cornEarned = cornForRun({ corn: delta.corn, score: delta.score, bossesKilled: delta.bosses });
+  const cornEarned = Math.max(0, delta.corn) + Math.max(0, delta.scoreBlocks) + CORN_PER_BOSS * Math.max(0, delta.bosses);
   p.corn += cornEarned;
   p.stats.cornEarned += cornEarned;
-  p.stats.runs += 1;
+  if (delta.first !== false) p.stats.runs += 1;
   if (s.victory) p.stats.victories += 1;
   p.stats.bestCombo = Math.max(p.stats.bestCombo, s.maxCombo);
   if (s.score > (p.best[s.mode] ?? 0)) p.best[s.mode] = s.score;
-  const fresh = evaluateAchievements(facts, p);
+  // Achievements already unlocked live are in `pending`; without storage the profile is empty, so skip them here too.
+  const fresh = evaluateAchievements(facts, p).filter((id) => !pending.includes(id));
   for (const id of fresh) unlockAchievement(p, id, date);
   const unlocked = [...pending, ...fresh];
   const achievementCorn = unlocked.reduce((n, id) => n + rewardFor(id), 0);
