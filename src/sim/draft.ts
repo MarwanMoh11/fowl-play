@@ -30,10 +30,13 @@ export function rollDraft(state: GameState): PerkId[] {
   return out;
 }
 
-export function openDraft(state: GameState): void {
+/** Opens a draft. Returns false, with no draft and no event, when every perk is maxed (the app never steps on the draft screen, so an empty one would softlock). */
+export function openDraft(state: GameState): boolean {
   const options = rollDraft(state);
+  if (options.length === 0) return false;
   state.draft = { options };
   emit(state, { type: 'perk_draft', options: options.slice() });
+  return true;
 }
 
 /** Applies perk `index` of the open draft. Returns false if there is no draft or the index is invalid. */
