@@ -45,17 +45,21 @@ export function updatePickups(state: GameState, dt: number): void {
     const p = list[i];
     if (!p.alive) continue;
     const m = PICKUP_DEFS[p.kind].motion;
+    const age0 = p.age;
     p.age += dt;
     p.spin += m.spin * dt;
+    let dx: number;
     if (m.type === 'pop') {
       p.vel.y = Math.min(p.vel.y + m.gravity * dt, m.maxFall);
+      dx = p.vel.x * dt;
     } else {
-      // Velocity is the derivative of a ±swayAmp sine offset, so x sways around its spawn column.
+      // Exact step of a ±swayAmp sine offset, so x sways around its spawn column without drift.
       const w = 2 * Math.PI * m.swayHz;
+      dx = m.swayAmp * (Math.sin(w * p.age) - Math.sin(w * age0));
       p.vel.x = m.swayAmp * w * Math.cos(w * p.age);
       p.vel.y = m.fall;
     }
-    p.pos.x = clamp(p.pos.x + p.vel.x * dt, PICKUP_MIN_X, PICKUP_MAX_X);
+    p.pos.x = clamp(p.pos.x + dx, PICKUP_MIN_X, PICKUP_MAX_X);
     p.pos.y += p.vel.y * dt;
     if (p.pos.y > PICKUP_REMOVE_Y) p.alive = false;
   }

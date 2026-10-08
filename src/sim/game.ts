@@ -36,6 +36,13 @@ const BANNER_TTL = {
 
 const FIRE_PHASES: readonly Phase[] = ['wave_intro', 'boss_intro', 'wave_active', 'wave_clear'];
 
+/** Summing DT drifts below exact multiples (120 × 1/60 < 2.0); this keeps phase lengths exact in ticks. */
+const PHASE_EPS = 1e-6;
+
+function after(t: number, seconds: number): boolean {
+  return t >= seconds - PHASE_EPS;
+}
+
 export function createGame(opts: NewGameOptions): GameState {
   const state: GameState = {
     seed: opts.seed >>> 0,
@@ -168,10 +175,10 @@ export function updatePhase(state: GameState, input: InputFrame, dt: number): vo
   const t = state.phaseTimer;
   switch (state.phase) {
     case 'wave_intro':
-      if (t >= PHASE_TIME.waveIntro) setPhase(state, 'wave_active');
+      if (after(t, PHASE_TIME.waveIntro)) setPhase(state, 'wave_active');
       break;
     case 'boss_intro':
-      if (t >= PHASE_TIME.bossIntro) setPhase(state, 'wave_active');
+      if (after(t, PHASE_TIME.bossIntro)) setPhase(state, 'wave_active');
       break;
     case 'wave_active':
       if (isWaveComplete(state)) {
@@ -181,7 +188,7 @@ export function updatePhase(state: GameState, input: InputFrame, dt: number): vo
       }
       break;
     case 'wave_clear':
-      if (t < PHASE_TIME.waveClear) break;
+      if (!after(t, PHASE_TIME.waveClear)) break;
       if (state.wave < WAVES_PER_CHAPTER) {
         state.wave += 1;
         beginWave(state);
@@ -194,12 +201,12 @@ export function updatePhase(state: GameState, input: InputFrame, dt: number): vo
       }
       break;
     case 'chapter_complete':
-      if (t >= PHASE_TIME.chapterComplete || (input.skip && t >= PHASE_TIME.chapterCompleteSkippableAfter)) {
+      if (after(t, PHASE_TIME.chapterComplete) || (input.skip && after(t, PHASE_TIME.chapterCompleteSkippableAfter))) {
         finishChapterTally(state);
       }
       break;
     case 'warp':
-      if (t >= PHASE_TIME.warp) {
+      if (after(t, PHASE_TIME.warp)) {
         state.chapter += 1;
         state.wave = 1;
         state.chapterStats = emptyStats();
