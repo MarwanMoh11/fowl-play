@@ -9,6 +9,7 @@ export interface EnemyDef {
   food: PickupKind | null;    // food dropped on death
   foodChance: number;         // 0..1 probability of the food drop
   splitInto: EnemyKind | null; // asteroids: break into 2 of this kind
+  shield?: number;            // HENPOCALYPSE shield pool, absorbs damage before hp (absent = 0)
 }
 
 const NO_FOOD = { food: null, foodChance: 0, eggRate: 0, splitInto: null } as const;
@@ -27,13 +28,13 @@ export const ENEMY_BASE: Record<EnemyKind, EnemyDef> = {
   boss_carrier:    { radius: 105, hp: 1300, points: 15000, ...NO_FOOD },
   boss_rooster:    { radius: 85, hp: 1700, points: 20000, ...NO_FOOD },
   boss_dreadnought: { radius: 130, hp: 3600, points: 50000, ...NO_FOOD },
-  // ---- HENPOCALYPSE armada: Phase-0 placeholder numbers (H3 tunes; see docs/HENPOCALYPSE.md §H3) ----
+  // ---- HENPOCALYPSE armada (final numbers, docs/HENPOCALYPSE.md §H3) ----
   chicken_ninja:   { radius: 22, hp: 3, points: 350, eggRate: 0.05, food: 'drumstick', foodChance: 1, splitInto: null },
   chicken_bomber:  { radius: 26, hp: 4, points: 400, eggRate: 0, food: 'drumstick', foodChance: 1, splitInto: null },
   egg_pod:         { radius: 20, hp: 6, points: 300, ...NO_FOOD },
   chicken_jet:     { radius: 22, hp: 2, points: 300, eggRate: 0, food: 'drumstick', foodChance: 1, splitInto: null },
   chicken_turret:  { radius: 28, hp: 10, points: 600, eggRate: 0, food: 'roast', foodChance: 1, splitInto: null },
-  chicken_shield:  { radius: 26, hp: 4, points: 500, eggRate: 0.06, food: 'roast', foodChance: 1, splitInto: null },
+  chicken_shield:  { radius: 26, hp: 4, points: 500, eggRate: 0.06, shield: 8, food: 'roast', foodChance: 1, splitInto: null },
   chicken_mech:    { radius: 34, hp: 20, points: 1000, eggRate: 0, food: 'roast', foodChance: 1, splitInto: null },
   space_mine:      { radius: 18, hp: 3, points: 150, ...NO_FOOD },
   chicken_ghost:   { radius: 24, hp: 4, points: 450, eggRate: 0.06, food: 'drumstick', foodChance: 1, splitInto: null },
@@ -42,7 +43,7 @@ export const ENEMY_BASE: Record<EnemyKind, EnemyDef> = {
   chicken_mother:  { radius: 36, hp: 15, points: 900, eggRate: 0.04, food: 'roast', foodChance: 1, splitInto: null },
   chicken_void:    { radius: 26, hp: 6, points: 700, eggRate: 0, food: 'roast', foodChance: 1, splitInto: null },
   chicken_gold:    { radius: 26, hp: 8, points: 5000, ...NO_FOOD },
-  chicken_elite:   { radius: 30, hp: 14, points: 1200, eggRate: 0.06, food: 'roast', foodChance: 1, splitInto: null },
+  chicken_elite:   { radius: 30, hp: 14, points: 1200, eggRate: 0.06, shield: 10, food: 'roast', foodChance: 1, splitInto: null },
   comet:           { radius: 20, hp: 2, points: 150, ...NO_FOOD },
   // HENPOCALYPSE bosses: base values only; H2 overrides hp/points/radius from tuning/bosses.ts.
   boss_broodmother: { radius: 120, hp: 4200, points: 60000, ...NO_FOOD },
@@ -61,9 +62,12 @@ export const ENEMY_BASE: Record<EnemyKind, EnemyDef> = {
   boss_mini_guard:     { radius: 74, hp: 1600, points: 22000, ...NO_FOOD },
 };
 
-/** Kind letters used by the chapter tables (§7.11). */
+/** Kind letters used by the chapter tables (§7.11; HENPOCALYPSE letters N X S W T G H K M V E). */
 export const KIND_LETTERS: Record<string, EnemyKind> = {
   B: 'chicken_basic', R: 'chicken_red', A: 'chicken_armored', U: 'chicken_ufo', C: 'chick',
+  N: 'chicken_ninja', X: 'chicken_bomber', S: 'chicken_shield', W: 'chicken_mech', T: 'chicken_turret',
+  G: 'chicken_ghost', H: 'chicken_healer', K: 'chicken_sniper', M: 'chicken_mother', V: 'chicken_void',
+  E: 'chicken_elite',
 };
 
 export const POINTS_ROUND_TO = 10;
@@ -161,3 +165,53 @@ export const OFFSCREEN = { minX: -40, maxX: 1320, minY: -40, maxY: 760 } as cons
 export const CARRY: { spanFraction: number; giftWaves: readonly number[]; maxTries: number } = {
   spanFraction: 0.8, giftWaves: [3, 6, 9], maxTries: 20,
 };
+
+// ---- HENPOCALYPSE armada (H3) ----
+
+/** Enemy abilities (abilities.ts). Times in s; speeds in px/s before DIFFICULTY.shotSpeed. */
+export const ABILITY = {
+  ninja: { period: 3.0, cloak: 0.6, knifeSpeed: 380 },
+  bomber: { clusterRate: 0.12, fuseMin: 0.9, fuseMax: 1.4, dropSpeed: 60 },
+  pod: { hatchAfter: 6, chicks: 3, chickSpeed: 240, chickTurn: 2.5, spread: 0.6 },
+  turret: { period: 2.5, burst: 3, gap: 0.12, speed: 300 },
+  regen: { delay: 3, perSecond: 2 },
+  elite: { period: 3, shots: 5, step: 0.21, speed: 260 },
+  mech: { period: 3, speed: 220 },
+  mine: { trigger: 90, shards: 8, shardSpeed: 220 },
+  ghost: { cycle: 4, cloakAt: 2.5 },
+  healer: { period: 2, radius: 160, fraction: 0.15 },
+  sniper: { period: 4, telegraph: 0.9, width: 4, speed: 700, reach: 1400 },
+  mother: { period: 4, spawn: 2, cap: 24, chickSpeed: 200, chickTurn: 1.5 },
+  void: { period: 2.5, speed: 160, homing: 1.2, ttl: 6, minX: 120, maxX: 1160, minY: 80, maxY: 360 },
+} as const;
+
+/** Armada movers and spawn lanes for the HENPOCALYPSE patterns (patterns/flyers.ts, patterns/drops.ts). */
+export const JETS = {
+  speed: 460, lanes: [140, 220, 300], vGap: 1.2, spacingX: 44, spacingY: 28,
+  wobbleAmp: 20, wobbleFreq: 3, leftX: -60, rightX: 1340,
+} as const;
+export const TURRETS = { parkY: 110, enterY: -60, enterTime: 1.6, minX: 200, maxX: 1080 } as const;
+export const MOTHERS = { homeY: 170, ampY: 30, ampX: 300, spacing: 260, freq: 0.5, rise: 200 } as const;
+export const VOIDS = { gap: 0.6 } as const;
+export const PODS = { spawnY: -30, minX: 120, maxX: 1160, drift: 40 } as const;
+export const MINES = {
+  spawnY: -30, minX: 60, maxX: 1220, minSpeed: 30, maxSpeed: 60, swayAmp: 40, minSwayFreq: 0.6, maxSwayFreq: 1.0,
+  bottomY: 740,
+} as const;
+export const COMETS = {
+  spawnY: -30, minSpeed: 380, maxSpeed: 520, leftMaxX: 240, rightMinX: 1040, minAngle: 55, maxAngle: 70, spinMax: 2,
+} as const;
+
+/** Golden chickens (waves.ts): a roll each second of a non-boss wave; the chicken flees across the screen. */
+export const GOLDEN = {
+  chancePerSec: 0.006, minY: 120, maxY: 260, speed: 300, zigzagAmp: 80, zigzagHz: 1.5,
+  spawnLeftX: -40, spawnRightX: 1320, leftExitX: -60, rightExitX: 1340,
+} as const;
+
+/** Environmental hazards (envHazards.ts), keyed by chapter: 7 solar flares, 10 lightning, 11 gravity well. */
+export const ENV = {
+  firstAt: 3,
+  flare: { every: 9, width: 90, telegraph: 1.2, beam: 0.6, minX: 60, maxX: 1220 },
+  lightning: { every: 6, width: 50, telegraph: 0.9, beam: 0.3, strikes: 2, gap: 0.4, minX: 60, maxX: 1220 },
+  well: { radius: 380, power: 90, y: 200, centerX: 640, swayAmp: 420, swayRate: 0.15, ttl: 0.25 },
+} as const;

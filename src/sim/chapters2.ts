@@ -1,30 +1,113 @@
 // src/sim/chapters2.ts — OWNER: H3. HENPOCALYPSE chapters 6–12 (wave 5 = mini-boss, wave 10 = boss).
-// Phase-0 placeholder: classic waves with the new bosses slotted in. H3 replaces every table here.
-import type { BossId } from './bosses.types';
-import type { ChapterDef, GroupSpec, WaveDef } from './waves.types';
-
-const boss = (id: BossId): GroupSpec => ({ pattern: 'boss', boss: id });
-const grid = (rowKinds: string, cols: number): GroupSpec => ({ pattern: 'grid', rowKinds, cols });
-const w = (name: string, ...groups: GroupSpec[]): WaveDef => ({ name, groups });
-
-function placeholder(name: string, palette: [string, string], mini: BossId, major: BossId): ChapterDef {
-  return {
-    name, palette,
-    waves: [
-      w('Wave 1', grid('RRBBB', 8)), w('Wave 2', grid('ARRBB', 8)), w('Wave 3', grid('RRRBB', 10)),
-      w('Wave 4', grid('AARBB', 10)), w('MINI-BOSS', boss(mini)), w('Wave 6', grid('AARRB', 10)),
-      w('Wave 7', grid('AARRR', 10)), w('Wave 8', grid('AAARR', 10)), w('Wave 9', grid('AAARRR', 12)),
-      w('BOSS', boss(major)),
-    ],
-  };
-}
+import type { ChapterDef } from './waves.types';
+import {
+  boss, comets, divers, grid, jets, later, mines, mothers, pods, ring, rings, stream, swarm, swoop, turrets, voids, w,
+} from './chapterKit';
 
 export const HENPOCALYPSE_CHAPTERS: readonly ChapterDef[] = [
-  placeholder('Nebula Nests', ['#1B0B2E', '#5C1F5A'], 'mini_brigadier', 'broodmother'),
-  placeholder('Solar Forge', ['#2E0A00', '#A83A00'], 'mini_ace', 'rotisserie'),
-  placeholder('Clockwork Coop', ['#0E1F1C', '#5B4A1E'], 'mini_cuckoo', 'colossus'),
-  placeholder('The Yolk Sea', ['#2B2200', '#C7A008'], 'mini_jelly', 'kraken'),
-  placeholder('Thunderhead Roost', ['#0A1020', '#2E3F66'], 'mini_stormcrow', 'phoenix'),
-  placeholder('Black Hole Barnyard', ['#050008', '#2A0A40'], 'mini_scarecrow', 'scrambler'),
-  placeholder('The Cluckhive Throne', ['#1F0010', '#7A0A2A'], 'mini_guard', 'empress'),
+  {
+    name: 'Nebula Nests', palette: ['#1B0B2E', '#5C1F5A'],
+    waves: [
+      w('Shadow Flock', grid('NBBB', 8)),
+      w('Pod Rain', pods(10, 1.4), later(grid('BBB', 8), 2)),
+      w('Carpet Bombers', grid('XRRB', 8)),
+      w('Ninja Parade', swoop('NNRB', 8)),
+      w('MINI-BOSS', boss('mini_brigadier')),
+      w('Nebula Spin', rings(ring('N', 10, 90, 1.0), ring('R', 16, 170, -1.0))),
+      w('Nest Guard', grid('XNRRB', 10), pods(6, 2.0)),
+      w('Hatchery', pods(14, 1.0), later(swarm(24), 3)),
+      w('Night Raid', divers('NNXRB', 10, 1.6, 2)),
+      w('BOSS', boss('broodmother')),
+    ],
+  },
+  {
+    name: 'Solar Forge', palette: ['#2E0A00', '#A83A00'],
+    waves: [
+      w('Afterburners', jets(18, 6)),
+      w('Sun Turrets', turrets(4), later(grid('RRB', 8), 1)),
+      w('Forge Line', grid('TRRBB', 10)),
+      w('Solar Wind', jets(24, 6, { speed: 520 }), later(stream(2, 10, 'R', 'LR', [260, 330]), 3)),
+      w('MINI-BOSS', boss('mini_ace')),
+      w('Bomb Run', grid('XXRRB', 10)),
+      w('Heat Shimmer', swoop('NTRRB', 10)),
+      w('Corona', rings(ring('T', 6, 70, 0.8), ring('X', 12, 140, -0.9), ring('R', 18, 210, 1.0))),
+      w('Meltdown', divers('XTNRB', 10, 1.3, 2), later(jets(12, 6), 4)),
+      w('BOSS', boss('rotisserie')),
+    ],
+  },
+  {
+    name: 'Clockwork Coop', palette: ['#0E1F1C', '#5B4A1E'],
+    waves: [
+      w('Shield Wall', grid('SSRRB', 10)),
+      w('Minefield', mines(30, 1.5), later(grid('RRB', 8), 2)),
+      w('Iron Walkers', grid('WWRB', 6)),
+      w('Gearbox', rings(ring('S', 8, 80, 1.1), ring('W', 6, 150, -0.6), ring('R', 16, 220, 1.1))),
+      w('MINI-BOSS', boss('mini_cuckoo')),
+      w('Clockwork Parade', swoop('SWRRB', 10)),
+      w('Tick Tock', divers('SSRRB', 10, 1.4, 2), mines(16, 1.0)),
+      w('Turret Gallery', turrets(6), later(grid('SSB', 10), 2)),
+      w('Overclock', grid('WSSRRB', 12, { descendRate: 4 })),
+      w('BOSS', boss('colossus')),
+    ],
+  },
+  {
+    name: 'The Yolk Sea', palette: ['#2B2200', '#C7A008'],
+    waves: [
+      w('Phantoms', grid('GGBB', 8)),
+      w('Medics', grid('HRRBB', 10)),
+      w('Yolk Comets', comets(25, 1.6)),
+      w('Haunted Rings', rings(ring('G', 10, 90, 1.1), ring('H', 6, 150, -0.7), ring('R', 18, 210, 1.1))),
+      w('MINI-BOSS', boss('mini_jelly')),
+      w('Ghost Parade', swoop('GHRRB', 10)),
+      w('Albumen Storm', comets(30, 2.0), later(stream(3, 10, 'G', 'LRL', [200, 260, 320]), 4)),
+      w('Triage', grid('HGSRRB', 12)),
+      w('Deep Dive', divers('GGHRR', 12, 1.2, 3)),
+      w('BOSS', boss('kraken')),
+    ],
+  },
+  {
+    name: 'Thunderhead Roost', palette: ['#0A1020', '#2E3F66'],
+    waves: [
+      w('Sharpshooters', grid('KRRBB', 10)),
+      w('Thunder Jets', jets(24, 8)),
+      w('Storm Front', stream(4, 12, 'R', 'LRLR', [150, 210, 270, 330], { amp: 90, speed: 280 })),
+      w('Crosshairs', turrets(4), grid('KKRB', 8)),
+      w('MINI-BOSS', boss('mini_stormcrow')),
+      w('Downpour', grid('XXKRB', 10), pods(8, 1.5)),
+      w('Static Rings', rings(ring('K', 8, 80, 1.2), ring('N', 14, 150, -1.2), ring('R', 20, 220, 1.2))),
+      w('Eye of the Storm', swarm(60), turrets(2, 3)),
+      w('Lightning Rod', divers('KKNXR', 12, 1.0, 3)),
+      w('BOSS', boss('phoenix')),
+    ],
+  },
+  {
+    name: 'Black Hole Barnyard', palette: ['#050008', '#2A0A40'],
+    waves: [
+      w('Event Horizon', voids(6), later(grid('RRB', 8), 2)),
+      w('Mother Load', mothers(3)),
+      w('Spaghetti Stream', stream(4, 14, 'G', 'LRLR', [150, 210, 270, 330], { amp: 70 })),
+      w('Singularity', rings(ring('V', 6, 80, 0.8), ring('M', 4, 150, -0.5), ring('A', 16, 220, 1.0))),
+      w('MINI-BOSS', boss('mini_scarecrow')),
+      w('Dark Matter', voids(10), mines(20, 1.2)),
+      w('Barn Burner', grid('MXSRRB', 12)),
+      w('Wormhole', swoop('VNGRB', 10), comets(20, 1.2)),
+      w('Collapse', divers('VMSKR', 12, 1.0, 3)),
+      w('BOSS', boss('scrambler')),
+    ],
+  },
+  {
+    name: 'The Cluckhive Throne', palette: ['#1F0010', '#7A0A2A'],
+    waves: [
+      w('Royal Guard', grid('EESSRR', 10)),
+      w('Imperial Jets', jets(30, 6, { speed: 560 }), turrets(4, 3)),
+      w('Court of Ghosts', grid('GHGHRR', 12)),
+      w('Throne Rings', rings(ring('E', 8, 80, 1.3), ring('V', 10, 150, -1.0), ring('K', 16, 220, 1.3))),
+      w('MINI-BOSS', boss('mini_guard')),
+      w('Hatchling Horde', mothers(4), pods(12, 1.0)),
+      w('Gauntlet of Steel', grid('WWEESS', 12, { descendRate: 5 })),
+      w('Armageddon Parade', swoop('EVGKXN', 12)),
+      w('Last Line', divers('EESSKK', 12, 0.9, 4), mines(20, 1.0)),
+      w('BOSS', boss('empress')),
+    ],
+  },
 ];

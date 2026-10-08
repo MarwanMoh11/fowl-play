@@ -9,6 +9,7 @@ import { rngChance, rngRange } from './rng';
 import { countEggs, spawnProjectile } from './projectiles';
 import { updateBoss } from './bosses';
 import { updateBehavior } from './behaviors';
+import { mineBurst, updateAbility } from './abilities';
 import { MAX_ENEMIES, EGG_DROP_MAX_Y } from './tuning/core';
 import { ASTEROIDS, EGG, ENEMY_BASE, LOST_ENEMY, POINTS_ROUND_TO, TILT } from './tuning/enemies';
 import type { EnemyDef } from './tuning/enemies';
@@ -41,12 +42,13 @@ export function spawnEnemy(
   const hp = boss ? def.hp : Math.max(1, Math.round(def.hp * diff.enemyHp * sc.hp * m.enemyHpMul));
   const points = boss ? def.points : Math.round((def.points * sc.points) / POINTS_ROUND_TO) * POINTS_ROUND_TO;
   const eggRate = boss ? 0 : def.eggRate * diff.eggRate * sc.eggRate * m.enemyEggRateMul;
+  const shield = boss ? 0 : Math.round((def.shield ?? 0) * diff.enemyHp * sc.hp * m.enemyHpMul);
   const e: Enemy = {
     id: newId(state), kind, pos: { x, y }, vel: { x: 0, y: 0 }, radius: def.radius,
     hp, maxHp: hp, points, eggRate, alive: true, age: 0, hitFlash: 0,
     invulnerable: false, canDropEggs: false, carries: null, rotation: 0, anim: 0,
     isBoss: boss, behavior,
-    shield: 0, maxShield: 0, skillTimer: 0, skillState: 0, parentId: -1,
+    shield, maxShield: shield, skillTimer: 0, skillState: 0, parentId: -1,
   };
   if (opts.counted !== false && !boss) e.carries = takeCarry(state);
   state.enemies.push(e);
@@ -109,7 +111,7 @@ function applyTilt(e: Enemy): void {
 export function updateEnemies(state: GameState, dt: number): void {
   const list = state.enemies;
   const n = list.length; // enemies spawned by behaviors this tick start updating next tick
-  const speed = chapterScale(state.chapter).speed;
+  const speed = chapterScale(state.chapter).speed * state.mods.enemySpeedMul;
   for (let i = 0; i < n; i++) {
     const e = list[i];
     if (!e.alive) continue;
@@ -121,6 +123,8 @@ export function updateEnemies(state: GameState, dt: number): void {
     }
     updateBehavior(state, e, dt, speed);
     if (!e.alive) continue;
+    updateAbility(state, e, dt);
+    if (!e.alive) continue;
     applyTilt(e);
     maybeDropEgg(state, e, dt);
     keepInBounds(state, e, dt);
@@ -130,6 +134,7 @@ export function updateEnemies(state: GameState, dt: number): void {
 /** Asteroid splitting (§7.11): L → 2 M, M → 2 S; no split when killed by a missile. */
 export function onEnemyKilled(state: GameState, enemy: Enemy, byMissile: boolean): void {
   if (state.waveRt.lost) delete state.waveRt.lost[enemy.id];
+  if (enemy.kind === 'space_mine') mineBurst(state, enemy); // H3: a shot or missile sets the mine off too
   const child = ENEMY_DEFS[enemy.kind].splitInto;
   if (!child || byMissile) return;
   const heading = angleOf(enemy.vel);

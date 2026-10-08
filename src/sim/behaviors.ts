@@ -2,9 +2,12 @@
 import type { Enemy, GameState } from './types';
 import type { BehaviorState } from './behaviors.types';
 import type { GroupRuntime } from './waves.types';
-import { cubicBezier, deg, easeOutCubic, fromAngle, lerp } from './math';
+import { clamp, cubicBezier, deg, easeOutCubic, fromAngle, lerp } from './math';
 import { rngRange } from './rng';
-import { ASTEROIDS, BOUNCE, BOUNCE_WOBBLE, DIVERS, FORMATION_BOB, RING } from './tuning/enemies';
+import { emit } from './events';
+import {
+  ASTEROIDS, BOUNCE, BOUNCE_WOBBLE, DIVERS, FORMATION_BOB, GOLDEN, JETS, MINES, MOTHERS, RING,
+} from './tuning/enemies';
 import { groupOf, moveTo } from './patterns/common';
 import { updateLane, updateSeek, updateStream, updateSwarm } from './patterns/movers';
 
@@ -116,10 +119,63 @@ function drift(e: Enemy, b: Of<'drift'>, dt: number): void {
   if (gone) e.alive = false; // silent: no points, no drops
 }
 
+/** H3 golden chicken: zigzags across the screen; leaving the far side is an escape (golden_escaped). */
+function flee(state: GameState, e: Enemy, b: Of<'flee'>, dt: number, speedScale: number): void {
+  b.t += dt;
+  const x = e.pos.x + b.dir * b.speed * speedScale * dt;
+  const y = b.baseY + GOLDEN.zigzagAmp * Math.sin(2 * Math.PI * GOLDEN.zigzagHz * b.t);
+  moveTo(e, x, y, dt);
+  e.canDropEggs = false;
+  const gone = b.dir === 1 ? x > GOLDEN.rightExitX : x < GOLDEN.leftExitX;
+  if (gone) {
+    e.alive = false;
+    emit(state, { type: 'golden_escaped' });
+  }
+}
+
+/** H3 void: holds still; the void ability teleports it (abilities.ts). */
+function blink(e: Enemy): void {
+  e.vel.x = 0;
+  e.vel.y = 0;
+  e.canDropEggs = false;
+}
+
+/** H3 jet: flies straight across with a sine wobble; past the far side it is removed silently (cleared). */
+function jet(e: Enemy, b: Of<'jet'>, dt: number, speedScale: number): void {
+  const x = e.pos.x + b.dir * b.speed * speedScale * dt;
+  const y = b.baseY + b.amp * Math.sin(b.freq * e.age + b.phase);
+  moveTo(e, x, y, dt);
+  e.canDropEggs = false;
+  if (b.dir === 1 ? x > JETS.rightX : x < JETS.leftX) e.alive = false;
+}
+
+/** H3 space mine: sinks at vy with a slow horizontal sway; removed silently at the bottom. */
+function mine(e: Enemy, b: Of<'mine'>, dt: number): void {
+  const x = b.baseX + b.swayAmp * Math.sin(b.swayFreq * e.age + b.phase);
+  const y = e.pos.y + b.vy * dt;
+  moveTo(e, x, y, dt);
+  e.canDropEggs = false;
+  if (y > MINES.bottomY) e.alive = false;
+}
+
+/** H3 mother: rises into a band at homeY and sways wide; never leaves the band. */
+function hover(e: Enemy, b: Of<'hover'>, dt: number): void {
+  const x = b.homeX + b.ampX * Math.sin(b.freq * e.age + b.phase);
+  const target = b.homeY + b.ampY * Math.sin(2 * b.freq * e.age + b.phase);
+  const y = e.pos.y + clamp(target - e.pos.y, -MOTHERS.rise * dt, MOTHERS.rise * dt);
+  moveTo(e, x, y, dt);
+  e.canDropEggs = y >= 0;
+}
+
 /** Moves one non-boss enemy for this tick and updates `vel`, `canDropEggs` and (for some) `rotation`. */
 export function updateBehavior(state: GameState, e: Enemy, dt: number, speedScale: number): void {
   const b = e.behavior;
   switch (b.type) {
+    case 'flee': return flee(state, e, b, dt, speedScale);
+    case 'blink': return blink(e);
+    case 'jet': return jet(e, b, dt, speedScale);
+    case 'mine': return mine(e, b, dt);
+    case 'hover': return hover(e, b, dt);
     case 'none':
     case 'boss':
       return;

@@ -1,10 +1,15 @@
-// src/sim/patterns/index.ts — OWNER: A3. Pattern registry: planned counts, start and per-tick update (§7.11).
+// src/sim/patterns/index.ts — OWNER: A3 (H3 added the armada patterns). Pattern registry: planned counts, start and per-tick update (§7.11).
 import type { GameState } from '../types';
 import type { GroupRuntime, GroupSpec } from '../waves.types';
 import { asteroidsPlanned, startAsteroids, updateAsteroids } from './asteroids';
 import { startBoss } from './boss';
 import { bouncersPlanned, startBouncers, updateBouncers } from './bouncers';
+import { cometsPlanned, minesPlanned, podsPlanned, startComets, startMines, startPods, updateComets, updateMines, updatePods } from './drops';
 import { gridPlanned, startDivers, startGrid, updateDivers, updateGrid } from './grid';
+import {
+  jetsPlanned, mothersPlanned, startJets, startMothers, startTurrets, startVoids, turretsPlanned, updateJets,
+  updateVoids, voidsPlanned,
+} from './flyers';
 import { ringPlanned, startRing, updateRing } from './ring';
 import { startStream, streamPlanned, updateStream } from './stream';
 import { startSwarm, swarmPlanned, updateSwarmGroup } from './swarm';
@@ -24,6 +29,13 @@ export function patternPlanned(spec: GroupSpec): number {
     case 'ufo': return ufoPlanned(spec);
     case 'swarm': return swarmPlanned(spec);
     case 'boss': return 0;
+    case 'jets': return jetsPlanned(spec);
+    case 'pods': return podsPlanned(spec);
+    case 'mines': return minesPlanned(spec);
+    case 'voids': return voidsPlanned(spec);
+    case 'comets': return cometsPlanned(spec);
+    case 'turrets': return turretsPlanned(spec);
+    case 'mothers': return mothersPlanned(spec);
   }
 }
 
@@ -40,6 +52,13 @@ export function startPattern(state: GameState, g: GroupRuntime, spec: GroupSpec)
     case 'ufo': return startUfo(state, g, spec);
     case 'swarm': return startSwarm(state, g, spec);
     case 'boss': return startBoss(state, g, spec);
+    case 'jets': return startJets(state, g, spec);
+    case 'pods': return startPods(state, g, spec);
+    case 'mines': return startMines(state, g, spec);
+    case 'voids': return startVoids(state, g, spec);
+    case 'comets': return startComets(state, g, spec);
+    case 'turrets': return startTurrets(state, g, spec);
+    case 'mothers': return startMothers(state, g, spec);
   }
 }
 
@@ -56,5 +75,12 @@ export function updatePattern(state: GameState, g: GroupRuntime, spec: GroupSpec
     case 'ufo': return updateUfo(state, g, spec, dt);
     case 'swarm': return updateSwarmGroup(state, g, spec, dt);
     case 'boss': return;
+    case 'jets': return updateJets(state, g, spec, dt);
+    case 'pods': return updatePods(state, g, spec, dt);
+    case 'mines': return updateMines(state, g, spec, dt);
+    case 'voids': return updateVoids(state, g, spec, dt);
+    case 'comets': return updateComets(state, g, spec, dt);
+    case 'turrets': return;
+    case 'mothers': return;
   }
 }

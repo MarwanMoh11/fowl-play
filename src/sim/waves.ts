@@ -1,13 +1,16 @@
 // src/sim/waves.ts — OWNER: H3 (was A3). Wave spawner: groups, delays, carry plan, completion (§7.8, §7.11, §7.12).
 import type { GameState, PickupKind } from './types';
 import type { GroupRuntime, WaveDef, WaveInfo } from './waves.types';
-import { emptyWaveRuntime } from './waves.types';
+import { ambientOf, emptyWaveRuntime } from './waves.types';
 import { chapterDisplayName, waveDef } from './chapters';
 import { currentWaveDef } from './modes';
 import { availableWeapons } from './pickups';
-import { rngInt, rngPick } from './rng';
+import { rngChance, rngInt, rngPick, rngRange } from './rng';
 import { patternPlanned, startPattern, updatePattern } from './patterns';
-import { CARRY, START_DELAY } from './tuning/enemies';
+import { CARRY, GOLDEN, START_DELAY } from './tuning/enemies';
+import { spawnEnemy } from './enemies';
+import { updateEnvHazards } from './envHazards';
+import { emit } from './events';
 
 const TIME_EPS = 1e-9;
 
@@ -80,14 +83,38 @@ export function updateWaveSpawner(state: GameState, dt: number): void {
     }
     updatePattern(state, g, def.groups[g.index], dt);
   }
+  // H3 ambient events run only while a non-boss wave is in play.
+  if (state.phase === 'wave_active' && !def.groups.some((g) => g.pattern === 'boss')) {
+    updateGoldenRoll(state, dt);
+    updateEnvHazards(state);
+  }
 }
 
+/** H3: each second, roll 0.006 × luck for a golden chicken (at most one alive). It flees across the screen. */
+function updateGoldenRoll(state: GameState, dt: number): void {
+  const amb = ambientOf(state.waveRt);
+  amb.goldClock += dt;
+  if (amb.goldClock < 1) return;
+  amb.goldClock -= 1;
+  if (state.enemies.some((e) => e.alive && e.kind === 'chicken_gold')) return;
+  if (!rngChance(state.rng, GOLDEN.chancePerSec * state.mods.luck)) return;
+  const dir: 1 | -1 = rngChance(state.rng, 0.5) ? 1 : -1;
+  const x = dir === 1 ? GOLDEN.spawnLeftX : GOLDEN.spawnRightX;
+  const y = rngRange(state.rng, GOLDEN.minY, GOLDEN.maxY);
+  const e = spawnEnemy(state, 'chicken_gold', x, y, { type: 'flee', dir, speed: GOLDEN.speed, baseY: y, t: 0 }, { counted: false });
+  if (e) emit(state, { type: 'golden_appear', x, y });
+}
+
+/** Golden chickens never hold a wave open; one still running when the wave completes leaves silently. */
 export function isWaveComplete(state: GameState): boolean {
   for (const g of state.waveRt.groups) {
     if (!g.started || !g.doneSpawning) return false;
   }
   for (const e of state.enemies) {
-    if (e.alive) return false;
+    if (e.alive && e.kind !== 'chicken_gold') return false;
+  }
+  for (const e of state.enemies) {
+    if (e.alive) e.alive = false;
   }
   return true;
 }
