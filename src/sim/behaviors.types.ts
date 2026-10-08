@@ -17,4 +17,4 @@ export type BehaviorState =
   | { type: 'ring'; group: number; ring: number; index: number; count: number; radiusTarget: number; omega: number }
   | { type: 'bounce'; entering: boolean }
   | { type: 'drift'; spin: number }
-  | { type: 'swarm'; offset: Vec2; mode: 'follow' | 'kamikaze'; dir: Vec2 };
+  | { type: 'swarm'; offset: Vec2; mode: 'follow' | 'kamikaze'; dir: Vec2; group?: number }; // group: A3 addition (optional)
