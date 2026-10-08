@@ -16,3 +16,41 @@ Append-only, one line per spec-silent decision.
 - [A1] Debug `chapter`/`wave` URL params apply to every game started in that page session (Play and Retry), only with `debug=1`. `gallery=1` works without `debug=1`.
 - [A1] Esc/P only pause; resuming is the pause menu's job (A4).
 - [A1] Debug `jumpToBoss` is ignored in `game_over` / `victory`.
+- [A1] Phase timers compare with a 1e-6 s epsilon, so a 2.0 s phase lasts exactly 120 ticks despite float drift in summed DT.
+- [A1] Integration tests check numeric invariants every tick and JSON serializability every 30–100 ticks (stringifying a full state every tick for 100k ticks is too slow).
+- [A4] qualifies(score) requires score > 0 and (table has < 10 entries or score > 10th entry); ties rank below existing equal scores; addHighScore returns the 0-based rank (-1 = not stored).
+- [A2] spawnProjectile uses velocities as given (callers apply shotSpeed) and never emits events; whoever spawns an egg emits `egg_dropped`, whoever fires an enemy shot emits `enemy_shot`.
+- [A2] fireCooldown carries sub-tick remainders (cooldown += 1/rate, at most one tick banked) so the true volley rate survives the 60 Hz step; first volley after idle leaves cooldown = 1/rate - dt.
+- [A2] Arc targeting skips invulnerable enemies for both the first target and chain hops (damage would be wasted); no screen-bounds restriction on targets.
+- [A2] Missile launch is allowed with 0 missiles when `debug.infiniteMissiles`; the missile projectile has damage 0 / pierce 0 and is ignored by collisions (kind 'missile').
+- [A3] Group `delay` in chapter data is the offset after the wave's first group; every group starts at 0.8 s + delay (so "delay +2.0" = 2.8 s after wave start).
+- [A3] Boss groups call `spawnBoss` inside `startWave` (not after the 0.8 s delay), so the boss enters during `boss_intro` and `bossName` is set before the banner reads it.
+- [A3] Grid sway time starts when the 2.0 s entry ends (sway phase 0), so the formation does not jump at the end of the entry.
+- [A3] Swarm followers steer with arrive damping (desired speed = min(maxSpeed, distance × 6/s)) to stop overshoot below y = 520; max speed/accel otherwise per spec. A kamikaze chick also reappears at y = -30 if it leaves through the sides.
+- [A3] `swarm` behavior got an optional `group` field (leader time and kamikaze selection are per swarm group). `WaveRuntime.lost` (optional) holds lost-enemy timers.
+- [A3] Shared `stream` behavior corrects y toward its sine at ≤ 500 px/s so minions that start off-curve (A2 hatchlings) glide onto it; `lane` y glides to laneY at 200 px/s and the shared `lane`/UFO fires only while on screen.
+- [A3] Asteroid exit rule: removed silently once past the side it travels toward (x < -r when vx < 0, x > 1280 + r when vx > 0) or below y = 720 + r. Splits and chapter-spawned rocks keep `drift`; children never consume carry-plan slots (`spawnEnemy(..., { counted: false })`).
+- [A3] A spawn skipped because of the entity cap still counts toward its group's `spawned`, so groups always finish.
+- [A3] Ring `omega`, UFO/stream/bouncer/asteroid/swarm speeds are multiplied by chapterScale.speed at spawn; dive duration is divided by it; return duration (1.2 s) is not scaled.
+- [A3] `dropEgg` emits `egg_dropped`; UFO/lane shots emit `enemy_shot` (A2's spawnProjectile emits nothing, per their note).
+- [A4] drawHud skips the canvas banner in phases game_over and victory (the DOM end screens own those phases); other banners draw as in §8.6.
+- [A4] Audio mapping: a gift_* pickup plays `gift` when a weapon_changed event is in the same batch, otherwise `power` (same-weapon gift); enemy_killed for boss kinds is silent (boss_killed plays `boss_die`); `victory` event has no SFX (victory track plays); food/roast are separate ids.
+- [A4] Tonal jingles (power, gift, one_up, wave_start, fanfare, game_over, UI blips, tick) skip the +-5% random pitch so they stay in tune with the music; all other sounds use +-5% (cluck/peep +-8%).
+- [A4] Music is ducked to 50% during phase chapter_complete (so the fanfare reads); paused ducks to 40% per §8.9. The victory track loops its last 2 bars at 60% level after one play.
+- [A4] Tally: TOTAL shows the raw sum; the `× mult (DIFFICULTY)` line shows the amount actually awarded.
+- [A4] End screens ignore clicks/keys for 350 ms after opening and lock the name field for 600 ms (the player is usually still firing); P also resumes from the pause menu.
+- [A4] HUD lives show player.lives as-is (it includes the ship in play). Zero missiles draws nothing.
+- [A2] Boss points are the §7.13 table values, not chapter-scaled; boss HP uses only difficulty.bossHp × chapterScale.bossHp.
+- [A2] Boss patrol sine phases start at the home position (twin hens: phase offset asin((homeX−640)/380) so hen A/B start at 400/880) so entry flows into movement without a jump; changing a hen's period at phase 1 keeps the phase continuous.
+- [A2] Boss first attack starts 0.8 s after entry ends (twin hen B: +2.0 s); egg_fan/turret_burst/etc. fire their first event on the tick the attack starts.
+- [A2] Boss minions are removed silently (alive=false, no points/drops) when the last boss dies, so a boss wave cannot stall on seeking chicks.
+- [A2] Carrier hatch releases its 5 hatchlings 0.15 s apart after the 0.6 s telegraph (not all at once); the "10 alive" skip is checked when the hatch starts. Brood chicks spawn spread ±28 px around the boss.
+- [A2] Dreadnought hatch/telegraph y offset is +100, beak (laser) at y+80, turrets at y+45; dive-sweep telegraph at 90° only (one line) even for the mirrored double beam.
+- [A2] Rooster sweep direction alternates via rt.data.sweepDir; the idle figure-8 clock (rt.data.pt) stops during laser_sweep and the dive, and resumes during the dive's return blend.
+- [A5] The sim removes a boss on death, so the renderer keeps a flashing, jittering ghost of the boss sprite for the 2.5 s explosion sequence of `boss_killed` (ends with the large explosion).
+- [A5] Hit flash is the white silhouette laid over the normal sprite at alpha 0.8 (0.55 for bosses), not a replacement, so a boss under constant fire stays readable. Twin Hens use the `boss_hen` sprite.
+- [A5] Bolts (pulse, laser), missiles and feather knives are rotated from their velocity (sprites point up); other projectiles use `Projectile.rotation`.
+- [A5] A sprite may carry transparent glow padding beyond its spec size (`SpriteDef.pad`); `SpriteApi.size()` reports the spec w x h, `draw()` centers the padded cell, `toCanvas()` returns the padded cell (CSS size = logical size incl. padding).
+- [A5] `enemy_hit` on bosses is lighter than on chickens (hen/rooster: 1 feather + 3 sparks, machine bosses: 4 sparks) because boss hit rates are high; `enemy_killed` for boss kinds is ignored (`boss_killed` carries the sequence).
+- [A5] Background crossfades (2 s) only on `wave_start` with wave 1; it snaps when a new GameState object is seen or the shown palette disagrees with `state.chapter`. Attract mode (state null) shows chapter 1.
+- [A5] The `?gallery=1` page scrolls with wheel, arrow keys, PgUp/PgDn, Home/End (listeners are attached on first gallery render only).

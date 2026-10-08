@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 /** Flipped to true by A1 at gate M2. */
-const ENFORCE_NO_STUBS = false;
+const ENFORCE_NO_STUBS = true;
 
 const ROOT = join(__dirname, '..');
 
