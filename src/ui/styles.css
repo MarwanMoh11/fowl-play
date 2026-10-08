@@ -1,11 +1,162 @@
-/* src/ui/styles.css — OWNER: A4 */
-/* STUB(A1): owner A4 implements (§8.7) */
-.stub-panel {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  gap: 16px; padding-bottom: 180px;
+/* src/ui/styles.css — OWNER: A4. DOM menus laid out in a fixed 1280x720 logical box (§8.7). */
+#ui {
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  font-weight: 700;
+  color: #fff;
 }
-.stub-btn {
-  font: bold 28px sans-serif; padding: 12px 48px; cursor: pointer;
-  background: #222; color: #fff; border: 2px solid #fff; border-radius: 6px;
+
+.fp-screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px;
+  background: rgba(5, 3, 20, 0.42);
+}
+.fp-title { justify-content: flex-start; padding-top: 44px; gap: 0; background: none; }
+
+/* Logo: dark outline layer underneath, gradient fill on top. */
+.fp-logo {
+  position: relative; margin: 0;
+  font-size: 96px; line-height: 1.05; font-weight: 900; letter-spacing: 2px; white-space: nowrap;
+}
+.fp-logo::before {
+  content: attr(data-text);
+  position: absolute; left: 0; top: 0; z-index: 0;
+  color: #1B1030;
+  text-shadow:
+    -5px 0 #1B1030, 5px 0 #1B1030, 0 -5px #1B1030, 0 5px #1B1030,
+    -4px -4px #1B1030, 4px -4px #1B1030, -4px 4px #1B1030, 4px 4px #1B1030,
+    0 12px 16px rgba(0, 0, 0, 0.6);
+}
+.fp-logo-fill {
+  position: relative; z-index: 1;
+  background: linear-gradient(180deg, #FFD60A 25%, #FF8A1E 95%);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+}
+.fp-tagline { margin: 6px 0 0; font-size: 24px; text-shadow: 0 2px 0 #1B1030, 0 0 12px rgba(0, 0, 0, 0.6); }
+.fp-footer {
+  position: absolute; left: 0; right: 0; bottom: 16px; padding: 0 28px;
+  display: flex; justify-content: space-between; gap: 24px;
+  font-size: 15px; opacity: 0.88; text-shadow: 0 2px 0 #1B1030;
+}
+
+/* Buttons and menu items */
+.fp-menu { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 30px; }
+.fp-btn {
+  appearance: none; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 300px; height: 52px; padding: 0 16px;
+  font: inherit; font-size: 22px; font-weight: 800; letter-spacing: 1px; color: #fff;
+  background: rgba(16, 10, 40, 0.88);
+  border: 2px solid #6C5CE7; border-radius: 12px;
+  cursor: pointer; outline: none;
+  transition: transform 0.08s ease-out, border-color 0.08s ease-out, background 0.08s ease-out;
+}
+.fp-btn:hover, .fp-btn.is-focused, .fp-btn:focus-visible {
+  border-color: #FFD60A; background: rgba(42, 26, 96, 0.94); transform: scale(1.04);
+}
+.fp-btn.is-disabled, .fp-btn:disabled { opacity: 0.4; cursor: default; transform: none; border-color: #6C5CE7; }
+.fp-selector, .fp-toggle, .fp-slider { justify-content: space-between; }
+.fp-sel-label { font-size: 16px; opacity: 0.9; text-align: left; white-space: nowrap; }
+.fp-selector .fp-arrow { margin-left: auto; color: #FFD60A; font-size: 18px; padding: 6px; cursor: pointer; }
+.fp-selector .fp-arrow + .fp-sel-value + .fp-arrow { margin-left: 0; }
+.fp-sel-value { min-width: 84px; text-align: center; }
+.fp-pill {
+  min-width: 64px; padding: 2px 12px; border-radius: 999px; text-align: center; font-size: 16px;
+  background: #2A2340; color: #cfc8ee;
+}
+.fp-pill.is-on { background: #39FF88; color: #1B1030; }
+.fp-track {
+  position: relative; flex: 1; height: 16px; margin: 0 14px; cursor: pointer;
+  background: #2A2340; border: 1px solid #1B1030; border-radius: 8px; overflow: hidden;
+}
+.fp-fill { display: block; height: 100%; background: linear-gradient(90deg, #39FF88, #FFD60A); pointer-events: none; }
+.fp-readout { width: 42px; text-align: right; font-size: 18px; }
+
+/* Panels */
+.fp-panel {
+  box-sizing: border-box;
+  background: rgba(16, 10, 40, 0.86);
+  border: 2px solid #6C5CE7; border-radius: 16px;
+  padding: 24px 32px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.55);
+  animation: fp-pop 0.14s ease-out;
+}
+@keyframes fp-pop { from { transform: scale(0.97); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.fp-heading {
+  margin: 0 0 16px; text-align: center; font-size: 40px; font-weight: 900; color: #FFD60A;
+  text-shadow: 0 3px 0 #1B1030;
+}
+.fp-heading-float { margin: 0; }
+.fp-subheading { margin: 0 0 12px; font-size: 20px; color: #FFD60A; text-align: center; }
+.fp-row { display: flex; justify-content: center; gap: 16px; margin-top: 18px; }
+.fp-list { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+
+.fp-pause { width: 420px; display: flex; flex-direction: column; align-items: center; }
+.fp-pause .fp-menu { margin-top: 8px; }
+.fp-settings { width: 560px; padding: 20px 28px; }
+.fp-settings .fp-btn { width: 480px; height: 46px; font-size: 18px; }
+.fp-settings .fp-heading { font-size: 34px; margin-bottom: 12px; }
+.fp-credits { width: 720px; text-align: center; }
+.fp-credit-line { margin: 8px 0; font-size: 20px; line-height: 1.4; font-weight: 600; }
+
+/* High scores */
+.fp-scores { width: 840px; }
+.fp-table { display: flex; flex-direction: column; gap: 2px; min-height: 120px; }
+.fp-trow {
+  display: grid; grid-template-columns: 44px 1.6fr 1.5fr 48px 1.2fr 1.3fr; gap: 8px;
+  padding: 6px 12px; font-size: 18px; border-radius: 8px;
+}
+.fp-trow span:nth-child(3) { text-align: right; }
+.fp-thead { font-size: 13px; opacity: 0.7; letter-spacing: 1px; }
+.fp-trow.is-new { background: rgba(255, 214, 10, 0.2); outline: 2px solid #FFD60A; color: #FFD60A; }
+.fp-empty { margin: 36px 0; text-align: center; font-size: 22px; opacity: 0.8; }
+
+/* How to play */
+.fp-howto-cols { display: flex; gap: 20px; align-items: stretch; }
+.fp-howto-col { width: 392px; padding: 18px 20px; }
+.fp-controls { display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 10px 8px; font-size: 14px; font-weight: 600; align-items: center; }
+.fp-ch { font-size: 12px; opacity: 0.65; letter-spacing: 1px; }
+.fp-cl { color: #FFD60A; font-weight: 800; }
+.fp-pickup { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.fp-preview {
+  flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.3); border-radius: 8px;
+}
+.fp-preview canvas { max-width: 40px; max-height: 40px; width: auto; height: auto; }
+.fp-pickup-text b { display: block; font-size: 14px; color: #FFD60A; }
+.fp-pickup-text small { display: block; font-size: 12px; font-weight: 600; line-height: 1.25; opacity: 0.88; }
+.fp-tips { margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.5; font-weight: 600; }
+.fp-tips li { margin-bottom: 10px; }
+
+/* Game over and victory */
+.fp-end { width: 780px; text-align: center; padding: 22px 32px; }
+.fp-end-title { margin: 0; font-size: 64px; font-weight: 900; text-shadow: 0 4px 0 #1B1030; }
+.fp-end.is-over .fp-end-title { color: #FF3B3B; }
+.fp-end.is-victory .fp-end-title {
+  background: linear-gradient(180deg, #FFD60A, #FF8A1E);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 0 #1B1030);
+}
+.fp-score-label { display: block; margin-top: 6px; font-size: 13px; letter-spacing: 2px; opacity: 0.7; }
+.fp-score { font-size: 76px; line-height: 1.05; font-weight: 900; color: #FFD60A; text-shadow: 0 4px 0 #1B1030; }
+.fp-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0 6px; }
+.fp-stat small { display: block; font-size: 12px; letter-spacing: 1px; opacity: 0.65; }
+.fp-stat b { font-size: 20px; }
+.fp-name-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px; margin-top: 14px; }
+.fp-name-label { flex-basis: 100%; font-size: 15px; letter-spacing: 1px; color: #FFD60A; }
+.fp-input {
+  box-sizing: border-box; width: 280px; height: 52px; padding: 0 12px;
+  font: inherit; font-size: 26px; font-weight: 800; letter-spacing: 4px; text-align: center; text-transform: uppercase;
+  color: #FFD60A; background: #0D0820; border: 2px solid #6C5CE7; border-radius: 12px; outline: none;
+}
+.fp-input:focus, .fp-input.is-focused { border-color: #FFD60A; }
+.fp-save { width: 140px; }
+.fp-end .fp-row { margin-top: 16px; }
+.fp-end .fp-table { margin-top: 10px; }
+.fp-end .fp-trow { padding: 3px 12px; font-size: 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fp-panel { animation: none; }
+  .fp-btn { transition: none; }
 }

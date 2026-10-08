@@ -1,49 +1,66 @@
-// src/ui/index.ts — OWNER: A4
-// STUB(A1): owner A4 implements (§8.7)
-import type { RunSummary, UI, UICallbacks, UIDeps } from '../shared/contracts';
+// src/ui/index.ts — OWNER: A4. DOM menus in #ui (§8.7): title, pause, game over, victory and their sub-screens.
+import type { RunSummary, Settings, UI, UICallbacks, UIDeps } from '../shared/contracts';
+import { buildEnd } from './screens/end';
+import type { Host, Screen } from './screens/host';
+import { buildPause } from './screens/pause';
+import { buildTitle } from './screens/title';
+import { parseSettings, safeStorage, saveSettings } from './storage';
 
 export function createUI(root: HTMLElement, cb: UICallbacks, deps: UIDeps): UI {
+  const kv = safeStorage();
+  let current: Screen | null = null;
   let open = false;
 
-  function show(build: () => HTMLElement): void {
-    root.replaceChildren(build());
-    open = true;
-  }
+  const host: Host = {
+    cb,
+    audio: deps.audio,
+    sprites: deps.sprites,
+    kv,
+    settings: () => deps.getSettings(),
+    update(patch: Partial<Settings>): void {
+      const next = parseSettings({ ...deps.getSettings(), ...patch });
+      saveSettings(next, kv);
+      cb.onSettingsChanged(next);
+    },
+    show(screen: Screen): void {
+      current = screen;
+      open = true;
+      root.replaceChildren(screen.el);
+      screen.menu.focusFirst();
+    },
+  };
 
-  function button(label: string, onClick: () => void): HTMLButtonElement {
-    const b = document.createElement('button');
-    b.textContent = label;
-    b.className = 'stub-btn';
-    b.addEventListener('click', onClick);
-    return b;
-  }
-
-  function panel(...children: HTMLElement[]): HTMLElement {
-    const div = document.createElement('div');
-    div.className = 'stub-panel';
-    div.append(...children);
-    return div;
-  }
+  // Menu keys are handled here, before the game's own window listener sees them, so Esc/Space/Enter never leak.
+  document.addEventListener('keydown', (e) => {
+    if (!open || !current) return;
+    if (current.menu.handleKey(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+  // Space/Enter on a focused button would otherwise also fire a native click on key-up.
+  document.addEventListener('keyup', (e) => {
+    if (open && (e.code === 'Space' || e.code === 'Enter') && e.target instanceof HTMLButtonElement) e.preventDefault();
+  });
 
   return {
     showTitle(): void {
-      show(() => panel(button('PLAY', () => cb.onStart(deps.getSettings().difficulty))));
+      host.show(buildTitle(host));
     },
     showPause(): void {
-      show(() => panel(button('RESUME', () => cb.onResume()), button('QUIT', () => cb.onQuitToTitle())));
+      host.show(buildPause(host));
     },
-    showGameOver(_s: RunSummary): void {
-      show(() => panel(button('RETRY', () => cb.onRestart()), button('TITLE', () => cb.onQuitToTitle())));
+    showGameOver(summary: RunSummary): void {
+      host.show(buildEnd(host, summary));
     },
-    showVictory(_s: RunSummary): void {
-      show(() => panel(button('CONTINUE', () => cb.onContinueEndless()), button('TITLE', () => cb.onQuitToTitle())));
+    showVictory(summary: RunSummary): void {
+      host.show(buildEnd(host, summary));
     },
     hide(): void {
-      root.replaceChildren();
       open = false;
+      current = null;
+      root.replaceChildren();
     },
-    isOpen(): boolean {
-      return open;
-    },
+    isOpen: () => open,
   };
 }
