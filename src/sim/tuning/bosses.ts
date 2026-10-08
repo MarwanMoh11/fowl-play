@@ -17,13 +17,13 @@ export const BOSS_DEFS: Record<BossId, BossDef> = {
   rooster:     { kind: 'boss_rooster', hp: 1700, points: 20_000, radius: 85, homes: [{ x: 640, y: 150 }], entry: 2.5 },
   twin_hens:   { kind: 'boss_hen', hp: 650, points: 8_000, radius: 95, homes: [{ x: 400, y: 170 }, { x: 880, y: 170 }], entry: 2.5 },
   dreadnought: { kind: 'boss_dreadnought', hp: 3600, points: 50_000, radius: 130, homes: [{ x: 640, y: 165 }], entry: 3.0 },
-  // ---- HENPOCALYPSE (Phase-0 placeholders; H2 sets the real numbers, docs/HENPOCALYPSE.md §H2) ----
+  // ---- HENPOCALYPSE bosses (docs/HENPOCALYPSE.md §H2); homes are where each entry ends, on the start of its path ----
   broodmother: { kind: 'boss_broodmother', hp: 4200, points: 60_000, radius: 120, homes: [{ x: 640, y: 170 }], entry: 3.0 },
   rotisserie:  { kind: 'boss_rotisserie', hp: 4800, points: 70_000, radius: 130, homes: [{ x: 640, y: 170 }], entry: 3.0 },
   colossus:    { kind: 'boss_colossus', hp: 5600, points: 80_000, radius: 140, homes: [{ x: 640, y: 175 }], entry: 3.0 },
-  kraken:      { kind: 'boss_kraken', hp: 6000, points: 90_000, radius: 135, homes: [{ x: 640, y: 165 }], entry: 3.0 },
-  phoenix:     { kind: 'boss_phoenix', hp: 6400, points: 100_000, radius: 115, homes: [{ x: 640, y: 160 }], entry: 3.0 },
-  scrambler:   { kind: 'boss_scrambler', hp: 7200, points: 120_000, radius: 130, homes: [{ x: 640, y: 180 }], entry: 3.0 },
+  kraken:      { kind: 'boss_kraken', hp: 6000, points: 90_000, radius: 135, homes: [{ x: 640, y: 160 }], entry: 3.0 },
+  phoenix:     { kind: 'boss_phoenix', hp: 6400, points: 100_000, radius: 115, homes: [{ x: 640, y: 150 }], entry: 3.0 },
+  scrambler:   { kind: 'boss_scrambler', hp: 7200, points: 120_000, radius: 130, homes: [{ x: 640, y: 140 }], entry: 3.0 },
   empress:     { kind: 'boss_empress', hp: 9000, points: 250_000, radius: 150, homes: [{ x: 640, y: 175 }], entry: 3.5 },
   mini_brigadier: { kind: 'boss_mini_brigadier', hp: 900, points: 15_000, radius: 70, homes: [{ x: 640, y: 150 }], entry: 2.0 },
   mini_ace:       { kind: 'boss_mini_ace', hp: 1000, points: 16_000, radius: 70, homes: [{ x: 640, y: 150 }], entry: 2.0 },

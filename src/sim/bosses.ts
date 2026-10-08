@@ -17,6 +17,20 @@ import { henBehavior } from './bosses/hen';
 import { carrierBehavior } from './bosses/carrier';
 import { roosterBehavior } from './bosses/rooster';
 import { dreadnoughtBehavior } from './bosses/dreadnought';
+import { broodmotherBehavior } from './bosses/broodmother';
+import { rotisserieBehavior } from './bosses/rotisserie';
+import { colossusBehavior } from './bosses/colossus';
+import { krakenBehavior } from './bosses/kraken';
+import { phoenixBehavior } from './bosses/phoenix';
+import { scramblerBehavior } from './bosses/scrambler';
+import { empressBehavior } from './bosses/empress';
+import { brigadierBehavior } from './bosses/mini_brigadier';
+import { aceBehavior } from './bosses/mini_ace';
+import { cuckooBehavior } from './bosses/mini_cuckoo';
+import { jellyBehavior } from './bosses/mini_jelly';
+import { stormcrowBehavior } from './bosses/mini_stormcrow';
+import { scarecrowBehavior } from './bosses/mini_scarecrow';
+import { guardBehavior } from './bosses/mini_guard';
 
 const BEHAVIORS: Record<BossId, BossBehavior> = {
   hen: henBehavior,
@@ -24,21 +38,20 @@ const BEHAVIORS: Record<BossId, BossBehavior> = {
   carrier: carrierBehavior,
   rooster: roosterBehavior,
   dreadnought: dreadnoughtBehavior,
-  // Phase-0 placeholders (H2 replaces each with its own behavior module under bosses/).
-  broodmother: henBehavior,
-  rotisserie: carrierBehavior,
-  colossus: dreadnoughtBehavior,
-  kraken: carrierBehavior,
-  phoenix: roosterBehavior,
-  scrambler: carrierBehavior,
-  empress: dreadnoughtBehavior,
-  mini_brigadier: henBehavior,
-  mini_ace: henBehavior,
-  mini_cuckoo: henBehavior,
-  mini_jelly: henBehavior,
-  mini_stormcrow: henBehavior,
-  mini_scarecrow: henBehavior,
-  mini_guard: henBehavior,
+  broodmother: broodmotherBehavior,
+  rotisserie: rotisserieBehavior,
+  colossus: colossusBehavior,
+  kraken: krakenBehavior,
+  phoenix: phoenixBehavior,
+  scrambler: scramblerBehavior,
+  empress: empressBehavior,
+  mini_brigadier: brigadierBehavior,
+  mini_ace: aceBehavior,
+  mini_cuckoo: cuckooBehavior,
+  mini_jelly: jellyBehavior,
+  mini_stormcrow: stormcrowBehavior,
+  mini_scarecrow: scarecrowBehavior,
+  mini_guard: guardBehavior,
 };
 
 function runtimeOf(e: Enemy): BossRuntime | null {
@@ -77,6 +90,7 @@ export function spawnBoss(state: GameState, id: BossId): void {
     e.invulnerable = true;
     e.canDropEggs = false;
     e.eggRate = 0;
+    beh.onSpawn?.({ state, e, rt, dt: 0 });
     bodies.push(e);
   });
   if (bodies.length === 2) {
@@ -155,7 +169,12 @@ function advancePhase(state: GameState, e: Enemy, rt: BossRuntime): void {
 
 export function onBossDamaged(state: GameState, enemy: Enemy): void {
   const rt = runtimeOf(enemy);
-  if (!rt || enemy.hp <= 0) return;
+  if (!rt) return;
+  if (enemy.hp <= 0) {
+    // A lethal hit: the behavior may refuse the death (the Phoenix rebirth). Phases do not advance on death.
+    BEHAVIORS[rt.id].onLethal?.({ state, e: enemy, rt, dt: 0 });
+    return;
+  }
   const thresholds = BOSS_INFO[rt.id].thresholds;
   while (rt.phase < thresholds.length && enemy.hp / enemy.maxHp <= thresholds[rt.phase]) {
     advancePhase(state, enemy, rt);
@@ -175,6 +194,8 @@ export function onBossKilled(state: GameState, enemy: Enemy): void {
       prt.data.gapMul = TWIN_SURVIVOR_GAP_MUL;
     }
   }
+  // Anything this boss spawned (parentId = its id) goes with it, whatever kind it is.
+  for (const o of state.enemies) if (o.alive && !o.isBoss && o.parentId === enemy.id) o.alive = false;
   if (!state.enemies.some((o) => o.alive && o.isBoss && o.id !== enemy.id)) {
     for (const o of state.enemies) if (o.alive && isMinion(o)) o.alive = false;
   }

@@ -21,6 +21,10 @@ export interface BossBehavior {
   move(c: Ctx): void;
   onPhase(c: Ctx, phase: number): void;
   anim(c: Ctx): number;
+  /** Optional: runs once right after the body is spawned (e.g. the Guard's shield). */
+  onSpawn?(c: Ctx): void;
+  /** Optional: runs when a hit would take hp to 0 or below; the boss may refuse to die (Phoenix rebirth). */
+  onLethal?(c: Ctx): void;
 }
 
 const ATTACK_KEY = 'a_';
@@ -77,14 +81,18 @@ export function setPos(e: Enemy, x: number, y: number, dt: number): void {
   e.pos.y = y;
 }
 
-/** Telegraphs emit a `telegraph` event. Returns null when the hazard cap is reached. */
+/**
+ * Telegraphs emit a `telegraph` event; beams are lethal; gravity wells use `a` as the centre,
+ * `width` as the radius and `power` as the pull. Returns null when the hazard cap is reached.
+ */
 export function addHazard(
-  state: GameState, e: Enemy, kind: 'telegraph' | 'beam', a: Vec2, b: Vec2, width: number, ttl: number,
+  state: GameState, e: Enemy, kind: 'telegraph' | 'beam' | 'gravity', a: Vec2, b: Vec2, width: number, ttl: number,
+  power = 0,
 ): Hazard | null {
   if (state.hazards.length >= MAX_HAZARDS) return null;
   const h: Hazard = {
     id: newId(state), kind, a: { x: a.x, y: a.y }, b: { x: b.x, y: b.y }, width, ttl,
-    lethal: kind === 'beam', alive: true, ownerId: e.id, power: 0,
+    lethal: kind === 'beam', alive: true, ownerId: e.id, power,
   };
   state.hazards.push(h);
   if (kind === 'telegraph') emit(state, { type: 'telegraph', x: a.x, y: a.y });
